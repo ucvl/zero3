@@ -6,14 +6,14 @@ class RTU:
             self.client = ModbusClient(
                 method='rtu',
                 port=port,
-                baudrate=baudrate,
+                baudrate=baudrate, # 这行代码打印文本
                 timeout=timeout,
                 parity=parity,
                 stopbits=stopbits,
                 bytesize=bytesize
             )
             if not self.client.connect():
-                print("连接失败")
+                print("连接失败!")
                 self.client = None
         except Exception as e:
             print(f"初始化失败: {e}")

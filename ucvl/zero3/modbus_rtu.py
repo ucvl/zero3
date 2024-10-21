@@ -1,10 +1,11 @@
 from pymodbus.client import ModbusSerialClient as ModbusClient
+
 class RTU:
     def __init__(self, port, baudrate, timeout, parity, stopbits, bytesize):
         try:
             self.client = ModbusClient(
                 port=port,
-                baudrate=baudrate, # 这行代码打印文本
+                baudrate=baudrate,
                 timeout=timeout,
                 parity=parity,
                 stopbits=stopbits,
@@ -20,7 +21,7 @@ class RTU:
     def read_holding_registers(self, DataAddress, DataCount, SlaveAddress):
         if self.client:
             try:
-                result = self.client.read_holding_registers(address=DataAddress, count=DataCount, unit=SlaveAddress)
+                result = self.client.read_holding_registers(address=DataAddress, count=DataCount, slave=SlaveAddress)
                 if result.isError():
                     print("读取错误")
                     return None

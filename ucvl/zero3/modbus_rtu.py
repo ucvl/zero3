@@ -21,6 +21,7 @@ class RTU:
     def read_holding_registers(self, DataAddress, DataCount, SlaveAddress):
         if self.client:
             try:
+                self.client.unit_id = SlaveAddress  
                 result = self.client.read_holding_registers(address=DataAddress, count=DataCount, slave=SlaveAddress)
                 if result.isError():
                     print("读取错误")

@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="ucvl.zero3",
-    version="0.1.0",
-    author="你的名字",
+    version="V0.1.0",
+    author="赵锐剑",
     author_email="123003020@qq.com",
     description="ucvl",
     long_description=open('README.md').read(),

@@ -1,10 +1,8 @@
 from pymodbus.client import ModbusSerialClient as ModbusClient
-
 class RTU:
     def __init__(self, port, baudrate, timeout, parity, stopbits, bytesize):
         try:
             self.client = ModbusClient(
-                method='rtu',
                 port=port,
                 baudrate=baudrate, # 这行代码打印文本
                 timeout=timeout,

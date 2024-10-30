@@ -13,32 +13,39 @@ rtu_resource = RTU(
 )
 
 a = 0.0  # 用于存储读取的百分比值
-b = 0.0  # 需要检测的浮点数值
+b = 0.0  # 外部输入的浮点数值
 prev_b = 0.0  # 上一个周期的b值
 
 def rtu_communication():
     global a, b, prev_b
     while True:
         # 读取寄存器数据
-        result = rtu_resource.read_holding_registers(DataAddress=0, DataCount=1, SlaveAddress=1)
-        if result:
-            mv_value = result[0]
-            a = (mv_value / 10000.0) * 100  # 将0-10000之间的mv信号转换为百分比
-            print(f"读取到的百分比值: {a}%")
-
-        # 检测浮点数b的值，如果改变则发送数据
-        if b != prev_b:
-            success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[int(a)], DataAddress=50, DataCount=1)
-            if success:
-                print(f"发送数据成功: {a}% 到地址 50")
+        try:
+            result = rtu_resource.read_holding_registers(DataAddress=0, DataCount=1, SlaveAddress=1)
+            if result:
+                mv_value = result[0]
+                a = (mv_value / 10000.0) * 100  # 将0-10000之间的mv信号转换为百分比
+                print(f"读取到的百分比值: {a}%")
             else:
-                print("发送数据失败")
-            prev_b = b  # 更新上一个周期的b值以反映最新的状态
+                print("读取数据失败")
+        except Exception as e:
+            print(f"读取操作出现异常: {e}")
+
+        # 在读取操作有结果后（无论成功还是失败），才进行写操作
+        if b != prev_b:
+            try:
+                success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[int(b)], DataAddress=50, DataCount=1)
+                if success:
+                    print(f"发送数据成功: {b} 到地址 50")
+                else:
+                    print("发送数据失败")
+                prev_b = b  # 更新上一个周期的b值以反映最新的状态
+            except Exception as e:
+                print(f"写入操作出现异常: {e}")
         else:
             print("b值未改变，不发送数据")
 
-        b = a  # 更新b值为当前周期的a值
-
+        # 延时以减少频繁操作
         time.sleep(2)
 
 # 创建并启动新线程

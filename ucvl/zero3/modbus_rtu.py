@@ -38,7 +38,7 @@ class RTU:
         if self.client:
             try:
                 for i, value in enumerate(Data[:DataCount]):
-                    result = self.client.write_register(address=DataAddress + i, value=value, unit=SlaveAddress)
+                    result = self.client.write_register(address=DataAddress + i, value=value, slave=SlaveAddress)
                     if result.isError():
                         print("写入错误")
                         return False

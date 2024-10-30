@@ -67,6 +67,16 @@ def rtu_communication():
 
         time.sleep(2)  # 延时以减少频繁操作
 
+# 初始化RTU资源
+rtu_resource = RTU(
+    port='/dev/ttyS5',
+    baudrate=9600,
+    timeout=1,
+    parity='N',
+    stopbits=1,
+    bytesize=8
+)
+
 # 创建并启动新线程，运行RTU通讯函数
 rtu_thread = threading.Thread(target=rtu_communication)
 rtu_thread.start()
@@ -87,22 +97,22 @@ def main():
 
     # 初始化类实例并访问属性
     instance = NewClass()
-    # print(f"Created class: {NewClass.__name__}")
-    # for attr, value in instance.__dict__.items():
-    #     print(f" - {attr}: {value}")
+    print(f"Created class: {NewClass.__name__}")
+    for attr, value in instance.__dict__.items():
+        print(f" - {attr}: {value}")
 
     # 修改特定属性的值（例如，修改"行程反馈"的ID）
-    # if hasattr(instance, '行程反馈'):
-     #    instance.行程反馈["ID"] = 9999
-    # print(f"修改后的特定类: {NewClass.__name__}")
-    #for attr, value in instance.__dict__.items():
-    #    print(f" - {attr}: {value}")
+    if hasattr(instance, '行程反馈'):
+        instance.行程反馈["ID"] = 9999
+    print(f"修改后的特定类: {NewClass.__name__}")
+    for attr, value in instance.__dict__.items():
+        print(f" - {attr}: {value}")
 
 if __name__ == "__main__":
     main()
 
 # 主程序，循环打印信息
 while True:
-    print("Hello, 世界，第V0.1.14个版本测试!")
-    print("阀门的实时 开度在main中的显示："+instance.行程反馈["实时值"])
+    print("Hello, 世界，第V0.1.15个版本测试!")
+    print(f"阀门的实时 开度在main中的显示: {instance.行程反馈['实时值']}")
     time.sleep(10)

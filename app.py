@@ -77,7 +77,7 @@ def rtu_communication():
                 print("读取数据失败")
         except Exception as e:
             print(f"读取操作出现异常: {e}")
-
+        time.sleep(2)  # 延时以减少频繁操作
         # 写数据操作
         try:
             if instance and hasattr(instance, '行程给定'):
@@ -139,6 +139,6 @@ if __name__ == "__main__":
 
 # 主程序，循环打印信息
 while True:
-    print("Hello, 世界，第V0.1.15个版本测试!")
+    print("Hello, 世界，第V0.1.19个版本测试!")
     print(f"阀门的实时 开度在main中的显示: {instance.行程反馈['实时值']}")
     time.sleep(10)

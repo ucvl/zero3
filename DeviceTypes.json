@@ -1,0 +1,226 @@
+{"DeviceTypes": [
+  {
+    "ID": 1,
+    "Name": "DT_流量平衡调节阀",
+    "Version":"V0.0.1",
+    "Tags": [
+      {
+        "ID": 1000,
+        "Name": "行程反馈",
+        "Type": "Int",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 1001,
+        "Name": "行程增加",
+        "Type": "Bool",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 1002,
+        "Name": "行程减少",
+        "Type": "Bool",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 2000,
+        "Name": "行程给定",
+        "Type": "Int",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 2001,
+        "Name": "远程输出状态",
+        "Type": "Bool",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 2002,
+        "Name": "上行通讯状态",
+        "Type": "Bool",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3000,
+        "Name": "远程",
+        "Type": "Bool",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3001,
+        "Name": "行程增减步进",
+        "Type": "Real",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3002,
+        "Name": "下行通讯故障是否启用",
+        "Type": "Bool",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3003,
+        "Name": "下行通讯故障是否自复位",
+        "Type": "Bool",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3004,
+        "Name": "下行通讯故障延时时间",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3005,
+        "Name": "偏差过大检测是否启用",
+        "Type": "Bool",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3006,
+        "Name": "偏差过大是否自复位",
+        "Type": "Bool",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 3007,
+        "Name": "偏差过大故障延时时间",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4000,
+        "Name": "编号",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4001,
+        "Name": "类型",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4002,
+        "Name": "区域",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4003,
+        "Name": "楼号",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4004,
+        "Name": "单元",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4005,
+        "Name": "楼层",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4006,
+        "Name": "房间",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 4007,
+        "Name": "起始画面",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 6000,
+        "Name": "AM",
+        "Type": "Word",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 7000,
+        "Name": "ER",
+        "Type": "Word",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 8000,
+        "Name": "OP",
+        "Type": "UInt",
+        "RWType": "rw",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 8001,
+        "Name": "RS",
+        "Type": "UInt",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      },
+      {
+        "ID": 8002,
+        "Name": "SS",
+        "Type": "UInt",
+        "RWType": "r",
+        "Offset": 0,
+        "BitOffset": 0
+      }
+    ]
+  }
+]
+}

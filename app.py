@@ -82,6 +82,7 @@ def rtu_communication():
         try:
             if instance and hasattr(instance, '行程给定'):
                 b = instance.行程给定["实时值"]
+                print(f"b--------: {b} ")
             converted_b = int((b / 100.0) * 10000)  # 将0-100的b值转换为0-10000
             success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=50, DataCount=1)
             if success:
@@ -139,6 +140,6 @@ if __name__ == "__main__":
 
 # 主程序，循环打印信息
 while True:
-    print("Hello, 世界，第V0.1.20个版本测试!")
+    print("Hello, 世界，第V0.1.22个版本测试!")
     print(f"阀门的实时 开度在main中的显示: {instance.行程反馈['实时值']}")
     time.sleep(10)

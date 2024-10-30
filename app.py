@@ -140,6 +140,6 @@ if __name__ == "__main__":
 
 # 主程序，循环打印信息
 while True:
-    print("Hello, 世界，第V0.1.23个版本测试!")
+    print("Hello, 世界，第V0.1.24个版本测试!")
     print(f"阀门的实时 开度在main中的显示: {instance.行程反馈['实时值']}")
     time.sleep(10)

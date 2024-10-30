@@ -6,6 +6,7 @@ from ucvl.zero3.modbus_rtu import RTU
 
 # 初始化全局变量
 a = 0.0
+b = 0.0
 instance = None
 
 # 函数：加载JSON文件
@@ -18,6 +19,16 @@ def load_json(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return data
+
+# 函数：保存JSON文件
+def save_json(file_path, data):
+    """
+    保存数据到JSON文件
+    :param file_path: JSON文件路径
+    :param data: 要保存的数据
+    """
+    with open(file_path, 'w', encoding='utf-8') as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
 
 # 函数：根据设备信息动态创建类
 def create_class_from_device(device):
@@ -37,7 +48,7 @@ def create_class_from_device(device):
             "Type": tag["Type"],
             "RW": tag["RW"],
             "起始值": tag.get("起始值", None),
-            "实时值": tag.get("实时值", None)
+            "实时值": tag.get("实时值", tag.get("起始值", None))
         }
     # 使用type函数动态创建类
     NewClass = type(class_name, (object,), attributes)
@@ -48,7 +59,9 @@ def rtu_communication():
     """
     RTU通讯函数，在独立线程中运行
     """
-    global a, instance
+    global a, b, instance
+    json_file_path = os.path.join(os.path.dirname(__file__), "DeviceTypes.json")
+    
     while True:
         # 读取寄存器数据
         try:
@@ -64,6 +77,26 @@ def rtu_communication():
                 print("读取数据失败")
         except Exception as e:
             print(f"读取操作出现异常: {e}")
+
+        # 写数据操作
+        try:
+            if instance and hasattr(instance, '行程给定'):
+                b = instance.行程给定["实时值"]
+            converted_b = int((b / 100.0) * 10000)  # 将0-100的b值转换为0-10000
+            success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=50, DataCount=1)
+            if success:
+                print(f"发送数据成功: {converted_b} 到地址 50")
+                # 更新 JSON 文件中的 "行程给定" 的 "起始值"
+                data = load_json(json_file_path)
+                for tag in data["DeviceTypes"][0]["Tags"]:
+                    if tag["Name"] == "行程给定":
+                        tag["起始值"] = b
+                        break
+                save_json(json_file_path, data)
+            else:
+                print("发送数据失败")
+        except Exception as e:
+            print(f"写入操作出现异常: {e}")
 
         time.sleep(2)  # 延时以减少频繁操作
 
@@ -98,13 +131,6 @@ def main():
     # 初始化类实例并访问属性
     instance = NewClass()
     print(f"Created class: {NewClass.__name__}")
-    for attr, value in instance.__dict__.items():
-        print(f" - {attr}: {value}")
-
-    # 修改特定属性的值（例如，修改"行程反馈"的ID）
-    if hasattr(instance, '行程反馈'):
-        instance.行程反馈["ID"] = 9999
-    print(f"修改后的特定类: {NewClass.__name__}")
     for attr, value in instance.__dict__.items():
         print(f" - {attr}: {value}")
 

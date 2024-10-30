@@ -1,7 +1,0 @@
-LICENSE
-README.md
-setup.py
-ucvl.zero3.egg-info/PKG-INFO
-ucvl.zero3.egg-info/SOURCES.txt
-ucvl.zero3.egg-info/dependency_links.txt
-ucvl.zero3.egg-info/top_level.txt

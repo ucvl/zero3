@@ -13,6 +13,9 @@ class RTU:
             if not self.client.connect():
                 print("连接失败!")
                 self.client = None
+            else:
+                print("连接成功---------------")
+
         except Exception as e:
             print(f"初始化失败: {e}")
             self.client = None

@@ -2,10 +2,9 @@ import json
 import os
 import time
 import threading
-import wiringpi
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
-from OPi import GPIO  # 使用 OPi.GPIO 库
+from OPi import GPIO
 # 初始化全局变量
 a = 0.0
 b = 0.0
@@ -137,7 +136,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.39! 当前时间是 {current_time}", flush=True)
+    print(f"Hello, 优创未来, version V0.1.40! 当前时间是 {current_time}", flush=True)
     print(f"阀门开度：{instance.行程反馈['实时值']}", flush=True)
     print(f"阀门给定开度：{instance.行程给定['实时值']}", flush=True)
     print(f"阀门就地远程状态：{instance.远程['实时值']}", flush=True)

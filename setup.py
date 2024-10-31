@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ucvl.zero3",
-    version="V0.1.30",
+    version="V0.1.31",
     author="赵锐剑",
     author_email="123003020@qq.com",
     description="ucvl",

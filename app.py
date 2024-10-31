@@ -2,10 +2,10 @@ import json
 import os
 import time
 import threading
+import wiringpi
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
-import wiringpi  # 使用 wiringPi 库
-
+from OPi import GPIO  # 使用 OPi.GPIO 库
 # 初始化全局变量
 a = 0.0
 b = 0.0
@@ -82,19 +82,22 @@ def rtu_communication():
 # GPIO 输入监测
 def gpio_input_monitor():
     global b, instance
-    wiringpi.wiringPiSetup()  # 初始化 wiringPi
+    GPIO.setmode(GPIO.BOARD)
 
-    # 设置 GPIO 引脚
-    wiringpi.pinMode(13, 0)  # INPUT
-    wiringpi.pinMode(16, 0)  # INPUT
+    try:
+        GPIO.setup(13, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    except Exception as e:
+        print(f"GPIO 初始化错误：{e}")
+        return  # 退出监测线程
 
-    last_state_13 = wiringpi.digitalRead(13)
-    last_state_16 = wiringpi.digitalRead(16)
+    last_state_13 = GPIO.input(13)
+    last_state_16 = GPIO.input(16)
 
     while True:
         if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
-            current_state_13 = wiringpi.digitalRead(13)
-            current_state_16 = wiringpi.digitalRead(16)
+            current_state_13 = GPIO.input(13)
+            current_state_16 = GPIO.input(16)
 
             # 检测上升沿并直接操作 b 的值
             if current_state_13 == 1 and last_state_13 == 0:
@@ -134,7 +137,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.38! 当前时间是 {current_time}", flush=True)
+    print(f"Hello, 优创未来, version V0.1.39! 当前时间是 {current_time}", flush=True)
     print(f"阀门开度：{instance.行程反馈['实时值']}", flush=True)
     print(f"阀门给定开度：{instance.行程给定['实时值']}", flush=True)
     print(f"阀门就地远程状态：{instance.远程['实时值']}", flush=True)

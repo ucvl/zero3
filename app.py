@@ -11,10 +11,8 @@ a = 0.0
 b = 0.0
 previous_b = None  # 用于记录上一次的 b 值
 instance = None
-
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
-
 # 加载 JSON 数据
 def load_json(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -39,7 +37,7 @@ def create_class_from_device(device):
 
 # RTU 通信函数
 def rtu_communication():
-    global a, b, previous_b, instance, rtu_resource
+    global a, b, previous_b, instance,rtu_resource
     json_file_path = os.path.join(os.path.dirname(__file__), "DeviceTypes.json")
 
     while True:
@@ -82,31 +80,38 @@ def rtu_communication():
 
         time.sleep(2)
 
-# 上升沿检测回调函数
-def handle_button_press(pin):
-    global b
-    if pin == 13:
-        b = min(b + 1, 100)
-        print(f"阀门就地远程状态：{b} (引脚 13 被触发)")
-    elif pin == 16:
-        b = max(b - 1, 0)
-        print(f"阀门就地远程状态：{b} (引脚 16 被触发)")
-
 def gpio_input_monitor():
-    global instance
+    global b, instance
     wiringpi.wiringPiSetup()  # 初始化 wiringPi 库
     wiringpi.pinMode(13, wiringpi.INPUT)  # 设置引脚 13 为输入
     wiringpi.pullUpDnControl(13, wiringpi.PUD_DOWN)  # 启用下拉电阻
     wiringpi.pinMode(16, wiringpi.INPUT)  # 设置引脚 16 为输入
     wiringpi.pullUpDnControl(16, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
-    # 设置中断，检测上升沿
-    wiringpi.wiringPiISR(13, wiringpi.INT_EDGE_RISING, lambda: handle_button_press(13))
-    wiringpi.wiringPiISR(16, wiringpi.INT_EDGE_RISING, lambda: handle_button_press(16))
+    last_state_13 = wiringpi.digitalRead(13)
+    last_state_16 = wiringpi.digitalRead(16)
 
-    # 保持主线程运行
-    while True:
-        time.sleep(1)
+    try:
+        while True:
+            if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
+                current_state_13 = wiringpi.digitalRead(13)
+                current_state_16 = wiringpi.digitalRead(16)
+
+                # 检测上升沿并直接操作 b 的值
+                if current_state_13 == 1 and last_state_13 == 0:
+                    b = min(b + 1, 100)
+                    print(f"阀门就地远程状态：{b} (引脚 13 上升沿触发)")
+
+                if current_state_16 == 1 and last_state_16 == 0:
+                    b = max(b - 1, 0)
+                    print(f"阀门就地远程状态：{b} (引脚 16 上升沿触发)")
+
+                last_state_13, last_state_16 = current_state_13, current_state_16
+            
+            time.sleep(1)
+    finally:
+        print("清理 GPIO 状态")
+    
 
 # 启动线程
 rtu_thread = threading.Thread(target=rtu_communication)
@@ -132,7 +137,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.55! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.53! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

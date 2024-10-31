@@ -97,19 +97,21 @@ def gpio_input_monitor():
 
     while True:
         if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
+            print("当前 是就地状态。111111111111")
             current_state_13 = GPIO.input(13)
             current_state_16 = GPIO.input(16)
 
             # 检测上升沿并直接操作 b 的值
             if current_state_13 == 1 and last_state_13 == 0:
                 b = min(b + 1, 100)
-                print(f"阀门就地远程状态：{b}")
+                print(f"阀门就地远程状态：{b} (引脚 13 上升沿触发)")
             if current_state_16 == 1 and last_state_16 == 0:
-                print(f"阀门就地远程状态：{b}")
+                print(f"阀门就地远程状态：{b} (引脚 16 上升沿触发)")
                 b = max(b - 1, 0)
 
             last_state_13, last_state_16 = current_state_13, current_state_16
         time.sleep(0.05)
+
 
 
 

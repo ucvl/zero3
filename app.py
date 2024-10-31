@@ -3,7 +3,7 @@ import os
 import time
 import threading
 from ucvl.zero3.modbus_rtu import RTU
-from orange_pi import GPIO
+from wiringpi import GPIO
 
 # 初始化全局变量
 a = 0.0
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
 # 无限循环
 while True:
-    print("Hello, 优创未来, version V0.1.27!")
+    print("Hello, 优创未来, version V0.1.28!")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

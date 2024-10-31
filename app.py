@@ -24,7 +24,6 @@ def save_json(file_path, data):
 
 # 从设备信息创建类
 def create_class_from_device(device):
-    # 定义类并创建初始值
     attributes = {tag["Name"]: {
         "ID": tag["ID"],
         "Type": tag["Type"],
@@ -32,10 +31,7 @@ def create_class_from_device(device):
         "起始值": tag.get("起始值", None),
         "实时值": tag.get("实时值", tag.get("起始值", None))
     } for tag in device["Tags"]}
-
-    # 使用类型生成动态类
     generated_class = type(device["Name"], (object,), attributes)
-    
     return generated_class
 
 # RTU 通信函数
@@ -56,15 +52,13 @@ def rtu_communication():
                 print("读取失败")
         except Exception as e:
             print(f"读取错误：{e}")
-        
+
         time.sleep(2)
-        
+
         # 只有在 b 值发生变化时才进行写入操作
         if b != previous_b:
             try:
                 converted_b = int((b / 100.0) * 10000)
-
-                # 写入重试，最多三次
                 for attempt in range(3):
                     success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
                     if success:
@@ -76,7 +70,7 @@ def rtu_communication():
                                 break
                         save_json(json_file_path, data)
                         previous_b = b  # 更新 previous_b
-                        break  # 写入成功，退出循环
+                        break
                     else:
                         print(f"写入失败，尝试 {attempt + 1}/3")
                         time.sleep(1)
@@ -89,8 +83,13 @@ def rtu_communication():
 def gpio_input_monitor():
     global b, instance
     GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(13, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+    try:
+        GPIO.setup(13, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    except Exception as e:
+        print(f"GPIO 初始化错误：{e}")
+        return  # 退出监测线程
 
     last_state_13 = GPIO.input(13)
     last_state_16 = GPIO.input(16)
@@ -99,7 +98,7 @@ def gpio_input_monitor():
         if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
             current_state_13 = GPIO.input(13)
             current_state_16 = GPIO.input(16)
-            
+
             # 检测上升沿并直接操作 b 的值
             if current_state_13 == 1 and last_state_13 == 0:
                 b = min(b + 1, 100)
@@ -107,7 +106,7 @@ def gpio_input_monitor():
             if current_state_16 == 1 and last_state_16 == 0:
                 print(f"阀门就地远程状态：{b}")
                 b = max(b - 1, 0)
-                
+
             last_state_13, last_state_16 = current_state_13, current_state_16
         time.sleep(0.05)
 
@@ -126,8 +125,7 @@ def main():
     json_file_path = os.path.join(os.path.dirname(__file__), "DeviceTypes.json")
     data = load_json(json_file_path)
     generated_class = create_class_from_device(data["DeviceTypes"][0])
-    
-    # 创建实例对象，并写入实时值
+
     instance = generated_class()
     for tag in data["DeviceTypes"][0]["Tags"]:
         if hasattr(instance, tag["Name"]):
@@ -139,7 +137,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print("Hello, 优创未来, version V0.1.31!当前时间是{current_time}")
+    print(f"Hello, 优创未来, version V0.1.32! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

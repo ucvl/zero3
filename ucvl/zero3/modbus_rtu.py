@@ -1,5 +1,10 @@
 from pymodbus.client import ModbusSerialClient as ModbusClient
+import logging
 
+# 配置日志输出
+logging.basicConfig()
+log = logging.getLogger()
+log.setLevel(logging.DEBUG)
 class RTU:
     def __init__(self, port, baudrate, timeout, parity, stopbits, bytesize):
         try:

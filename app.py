@@ -11,7 +11,8 @@ a = 0.0
 b = 0.0
 previous_b = None  # 用于记录上一次的 b 值
 instance = None
-
+# 初始化 RTU 资源
+rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 # 加载 JSON 数据
 def load_json(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -36,7 +37,7 @@ def create_class_from_device(device):
 
 # RTU 通信函数
 def rtu_communication():
-    global a, b, previous_b, instance
+    global a, b, previous_b, instance,rtu_resource
     json_file_path = os.path.join(os.path.dirname(__file__), "DeviceTypes.json")
 
     while True:
@@ -110,8 +111,7 @@ def gpio_input_monitor():
             last_state_13, last_state_16 = current_state_13, current_state_16
         time.sleep(0.05)
 
-# 初始化 RTU 资源
-rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
+
 
 # 启动线程
 rtu_thread = threading.Thread(target=rtu_communication)

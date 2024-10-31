@@ -4,7 +4,7 @@ import time
 import threading
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
-from OPi import GPIO
+import OPi.GPIO as GPIO  # 更新为 OPi.GPIO 库
 # 初始化全局变量
 a = 0.0
 b = 0.0
@@ -99,10 +99,10 @@ def gpio_input_monitor():
             current_state_16 = GPIO.input(16)
 
             # 检测上升沿并直接操作 b 的值
-            if current_state_13 == 1 and last_state_13 == 0:
+            if current_state_13 == GPIO.HIGH and last_state_13 == GPIO.LOW:
                 b = min(b + 1, 100)
                 print(f"阀门就地远程状态：{b}", flush=True)
-            if current_state_16 == 1 and last_state_16 == 0:
+            if current_state_16 == GPIO.HIGH and last_state_16 == GPIO.LOW:
                 print(f"阀门就地远程状态：{b}", flush=True)
                 b = max(b - 1, 0)
 
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.40! 当前时间是 {current_time}", flush=True)
+    print(f"Hello, 优创未来, version V0.1.41! 当前时间是 {current_time}", flush=True)
     print(f"阀门开度：{instance.行程反馈['实时值']}", flush=True)
     print(f"阀门给定开度：{instance.行程给定['实时值']}", flush=True)
     print(f"阀门就地远程状态：{instance.远程['实时值']}", flush=True)

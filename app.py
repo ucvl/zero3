@@ -13,6 +13,7 @@ previous_b = None  # 用于记录上一次的 b 值
 instance = None
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
+
 # 加载 JSON 数据
 def load_json(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -29,15 +30,15 @@ def create_class_from_device(device):
         "ID": tag["ID"],
         "Type": tag["Type"],
         "RW": tag["RW"],
-        "起始值": tag.get("起始值", None),
-        "实时值": tag.get("实时值", tag.get("起始值", None)) if (tag.get("实时值") != 0 and tag.get("实时值") != '') else None
+        "起始值": tag("起始值"),
+        "实时值": tag("实时值")
     } for tag in device["Tags"]}
     generated_class = type(device["Name"], (object,), attributes)
     return generated_class
 
 # RTU 通信函数
 def rtu_communication():
-    global a, b, previous_b, instance,rtu_resource
+    global a, b, previous_b, instance, rtu_resource
     json_file_path = os.path.join(os.path.dirname(__file__), "DeviceTypes.json")
 
     while True:
@@ -100,17 +101,17 @@ def gpio_input_monitor():
                 # 检测上升沿并直接操作 b 的值
                 if current_state_13 == 1 and last_state_13 == 0:
                     b = min(b + 1, 100)
-                 # 检测上升沿并直接操作 b 的值   print(f"阀门就地远程状态：{b} (引脚 13 上升沿触发)")
+                    print(f"阀门就地远程状态：{b} (引脚 13 上升沿触发)")
 
                 if current_state_16 == 1 and last_state_16 == 0:
                     b = max(b - 1, 0)
-                 # 检测上升沿并直接操作 b 的值   print(f"阀门就地远程状态：{b} (引脚 16 上升沿触发)")
+                    print(f"阀门就地远程状态：{b} (引脚 16 上升沿触发)")
 
                 last_state_13, last_state_16 = current_state_13, current_state_16
             
             time.sleep(1)
     finally:
-            print("清理 GPIO 状态")
+        print("清理 GPIO 状态")
     
 
 # 启动线程
@@ -127,19 +128,14 @@ def main():
     generated_class = create_class_from_device(data["DeviceTypes"][0])
 
     instance = generated_class()
-    for tag in data["DeviceTypes"][0]["Tags"]:
-        if tag["Name"] == "行程给定" and tag["实时值"] == 0:
-            # 只在实时值不为0时更新行程
-            instance.行程给定["实时值"] = tag["起始值"]
-
-
 
 if __name__ == "__main__":
     main()
+
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.58! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.59! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

@@ -30,7 +30,7 @@ def create_class_from_device(device):
         "Type": tag["Type"],
         "RW": tag["RW"],
         "起始值": tag.get("起始值", None),
-        "实时值": tag.get("实时值", tag.get("起始值", None))
+        "实时值": tag.get("实时值", tag.get("起始值", None)) if (tag.get("实时值") != 0 and tag.get("实时值") != '') else None
     } for tag in device["Tags"]}
     generated_class = type(device["Name"], (object,), attributes)
     return generated_class
@@ -54,7 +54,7 @@ def rtu_communication():
         except Exception as e:
             print(f"读取错误：{e}")
 
-        time.sleep(2)
+        time.sleep(0.2)
 
         # 只有在 b 值发生变化时才进行写入操作
         if b != previous_b:
@@ -78,7 +78,7 @@ def rtu_communication():
             except Exception as e:
                 print(f"写入错误：{e}")
 
-        time.sleep(2)
+        time.sleep(0.2)
 
 def gpio_input_monitor():
     global b, instance
@@ -100,17 +100,17 @@ def gpio_input_monitor():
                 # 检测上升沿并直接操作 b 的值
                 if current_state_13 == 1 and last_state_13 == 0:
                     b = min(b + 1, 100)
-                    print(f"阀门就地远程状态：{b} (引脚 13 上升沿触发)")
+                 # 检测上升沿并直接操作 b 的值   print(f"阀门就地远程状态：{b} (引脚 13 上升沿触发)")
 
                 if current_state_16 == 1 and last_state_16 == 0:
                     b = max(b - 1, 0)
-                    print(f"阀门就地远程状态：{b} (引脚 16 上升沿触发)")
+                 # 检测上升沿并直接操作 b 的值   print(f"阀门就地远程状态：{b} (引脚 16 上升沿触发)")
 
                 last_state_13, last_state_16 = current_state_13, current_state_16
             
-            time.sleep(1)
+            time.sleep(0.4)
     finally:
-        print("清理 GPIO 状态")
+            print("清理 GPIO 状态")
     
 
 # 启动线程
@@ -129,7 +129,9 @@ def main():
     instance = generated_class()
     for tag in data["DeviceTypes"][0]["Tags"]:
         if hasattr(instance, tag["Name"]):
-            getattr(instance, tag["Name"])["实时值"] = tag.get("实时值", tag.get("起始值", None))
+            real_time_value = tag.get("实时值", tag.get("起始值", None))
+            if real_time_value != 0 and real_time_value != '':
+                getattr(instance, tag["Name"])["实时值"] = tag["起始值"]
 
 if __name__ == "__main__":
     main()
@@ -137,7 +139,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.53! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.56! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

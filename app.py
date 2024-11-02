@@ -54,7 +54,7 @@ def rtu_communication():
         except Exception as e:
             print(f"读取错误：{e}")
 
-        time.sleep(0.2)
+        time.sleep(1)
 
         # 只有在 b 值发生变化时才进行写入操作
         if b != previous_b:
@@ -78,7 +78,7 @@ def rtu_communication():
             except Exception as e:
                 print(f"写入错误：{e}")
 
-        time.sleep(0.2)
+        time.sleep(1)
 
 def gpio_input_monitor():
     global b, instance
@@ -128,10 +128,11 @@ def main():
 
     instance = generated_class()
     for tag in data["DeviceTypes"][0]["Tags"]:
-        if hasattr(instance, tag["Name"]):
-            real_time_value = tag.get("实时值", tag.get("起始值", None))
-            if real_time_value != 0 and real_time_value != '':
-                getattr(instance, tag["Name"])["实时值"] = tag["起始值"]
+        if tag["Name"] == "行程给定" and tag["实时值"] == 0:
+            # 只在实时值不为0时更新行程
+            instance.行程给定["实时值"] = tag["起始值"]
+
+
 
 if __name__ == "__main__":
     main()

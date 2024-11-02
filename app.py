@@ -30,8 +30,8 @@ def create_class_from_device(device):
         "ID": tag["ID"],
         "Type": tag["Type"],
         "RW": tag["RW"],
-        "起始值": tag("起始值"),
-        "实时值": tag("实时值")
+        "起始值": tag["起始值"],
+        "实时值": tag["实时值"]
     } for tag in device["Tags"]}
     generated_class = type(device["Name"], (object,), attributes)
     return generated_class
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.59! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.60! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

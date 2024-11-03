@@ -14,7 +14,7 @@ instance = None
 pin_i_up = 13
 pin_i_down = 16
 pin_q_remote = 5
-
+json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json") # 阀门对象的配置文件 
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
@@ -42,8 +42,7 @@ def create_class_from_device(device):
 
 # RTU 通信函数
 def rtu_communication():
-    global a, b, previous_b, instance, rtu_resource
-    json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json") # 修改后的路径 
+    global a, b, previous_b, instance, rtu_resource,json_file_path
     check_path(json_file_path) # 添加路径检查
     while True:
         try:
@@ -123,9 +122,9 @@ def gpio_input_monitor():
             time.sleep(0.2)
     finally:
         print("清理 GPIO 状态")
-def check_path(file_path):
-    if not os.path.exists(file_path):
-        print(f"文件路径 {file_path} 不存在，程序退出。")
+def check_path(file_path): 
+    if not os.path.exists(file_path): 
+        print(f"文件路径 {file_path} 不存在，程序退出。") 
         exit(1)
 
 # 启动线程
@@ -137,8 +136,7 @@ gpio_thread.start()
 
 # 主函数
 def main():
-    global instance
-    json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json") # 修改后的路径 
+    global instance, json_file_path
     check_path(json_file_path) # 添加路径检查 
     data = load_json(json_file_path)
     generated_class = create_class_from_device(data["DeviceTypes"][0])

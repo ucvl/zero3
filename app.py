@@ -14,6 +14,7 @@ instance = None
 pin_i_up = 13
 pin_i_down = 16
 pin_q_remote = 5
+pin_q_conn_up = 7
 json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json") # 阀门对象的配置文件 
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
@@ -93,6 +94,7 @@ def gpio_input_monitor():
     wiringpi.pullUpDnControl(pin_i_down, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
     wiringpi.pinMode(pin_q_remote, wiringpi.OUTPUT)  # 设置引脚 pin_q_remote 为输出
+    wiringpi.pinMode(pin_q_conn_up, wiringpi.OUTPUT)  # 设置引脚 pin_q_remote 为输出
 
     last_state_up = wiringpi.digitalRead(pin_i_up)
     last_state_down = wiringpi.digitalRead(pin_i_down)
@@ -113,11 +115,19 @@ def gpio_input_monitor():
                 last_state_up, last_state_down = current_state_up, current_state_down
 
             # 检测 instance 的实时值并在 pin_q_remote 上输出
-            if instance and hasattr(instance, '实时值'):
-                if instance.实时值 == 1:
+            if instance and hasattr(instance, '远程'):
+                if instance.远程["实时值"] == 1:
                     wiringpi.digitalWrite(pin_q_remote, 1)
                 else:
                     wiringpi.digitalWrite(pin_q_remote, 0)
+
+            # 检测 instance 的 ER 实时值的第0位并在 pin_q_conn_up 上输出
+            if instance and hasattr(instance, 'ER'):
+                er_value = instance.ER["实时值"]
+                if er_value & 1:  # 检查第0位是否为1
+                    wiringpi.digitalWrite(pin_q_conn_up, 0)
+                else:
+                    wiringpi.digitalWrite(pin_q_conn_up, 1)
 
             time.sleep(0.2)
     finally:
@@ -149,7 +159,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.66! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.67! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

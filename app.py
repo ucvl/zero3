@@ -9,7 +9,7 @@ from ucvl.zero3.json_file  import JSONHandler
 # 初始化全局变量
 a = 0.0
 b = 0.0
-previous_b = None  # 用于记录上一次的 b 值
+previous_b = 0  # 用于记录上一次的 b 值
 instance = None
 pin_i_up = 13
 pin_i_down = 16
@@ -139,12 +139,13 @@ gpio_thread.start()
 
 # 主函数
 def main():
-    global instance, json_handler
+    global instance, json_handler,b
     json_handler = JSONHandler(json_file_path)  # 将路径传递给类进行初始化
     data = json_handler.data
     generated_class = create_class_from_device(data["DeviceTypes"][0])
 
     instance = generated_class()
+    b=instance.行程给定['实时值']
 
 if __name__ == "__main__":
     main()
@@ -152,7 +153,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.71! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.73! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

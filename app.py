@@ -11,8 +11,10 @@ a = 0.0
 b = 0.0
 previous_b = None  # 用于记录上一次的 b 值
 instance = None
-pin_up = 13
-pin_down = 16
+pin_i_up = 13
+pin_i_down = 16
+pin_q_remote = 5
+
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
@@ -56,7 +58,7 @@ def rtu_communication():
         except Exception as e:
             print(f"读取错误：{e}")
 
-        time.sleep(0.2)
+        time.sleep(0.1)
 
         # 只有在 b 值发生变化时才进行写入操作
         if b != previous_b:
@@ -79,40 +81,48 @@ def rtu_communication():
             except Exception as e:
                 print(f"写入错误：{e}")
 
-        time.sleep(0.2)
+        time.sleep(0.1)
 
 def gpio_input_monitor():
-    global b, instance, pin_up, pin_down
+    global b, instance, pin_i_up, pin_i_down, pin_q_remote
     wiringpi.wiringPiSetup()  # 初始化 wiringPi 库
-    wiringpi.pinMode(pin_up, wiringpi.INPUT)  # 设置引脚 9 为输入
-    wiringpi.pullUpDnControl(pin_up, wiringpi.PUD_DOWN)  # 启用下拉电阻
-    wiringpi.pinMode(pin_down, wiringpi.INPUT)  # 设置引脚 10 为输入
-    wiringpi.pullUpDnControl(pin_down, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
-    last_state_up = wiringpi.digitalRead(pin_up)
-    last_state_down = wiringpi.digitalRead(pin_down)
+    wiringpi.pinMode(pin_i_up, wiringpi.INPUT)  # 设置引脚 13 为输入
+    wiringpi.pullUpDnControl(pin_i_up, wiringpi.PUD_DOWN)  # 启用下拉电阻
+
+    wiringpi.pinMode(pin_i_down, wiringpi.INPUT)  # 设置引脚 16 为输入
+    wiringpi.pullUpDnControl(pin_i_down, wiringpi.PUD_DOWN)  # 启用下拉电阻
+
+    wiringpi.pinMode(pin_q_remote, wiringpi.OUTPUT)  # 设置引脚 pin_q_remote 为输出
+
+    last_state_up = wiringpi.digitalRead(pin_i_up)
+    last_state_down = wiringpi.digitalRead(pin_i_down)
 
     try:
         while True:
             if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
-                current_state_up = wiringpi.digitalRead(pin_up)
-                current_state_down = wiringpi.digitalRead(pin_down)
+                current_state_up = wiringpi.digitalRead(pin_i_up)
+                current_state_down = wiringpi.digitalRead(pin_i_down)
 
                 # 检测上升沿并直接操作 b 的值
                 if current_state_up == 1 and last_state_up == 0:
                     b = min(b + 1, 100)
 
-
                 if current_state_down == 1 and last_state_down == 0:
                     b = max(b - 1, 0)
 
-
                 last_state_up, last_state_down = current_state_up, current_state_down
-            
+
+            # 检测 instance 的实时值并在 pin_q_remote 上输出
+            if instance and hasattr(instance, '实时值'):
+                if instance.实时值 == 1:
+                    wiringpi.digitalWrite(pin_q_remote, 1)
+                else:
+                    wiringpi.digitalWrite(pin_q_remote, 0)
+
             time.sleep(0.2)
     finally:
         print("清理 GPIO 状态")
-    
 
 # 启动线程
 rtu_thread = threading.Thread(target=rtu_communication)
@@ -136,7 +146,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.63! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.64! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

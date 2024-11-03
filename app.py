@@ -11,8 +11,8 @@ a = 0.0
 b = 0.0
 previous_b = None  # 用于记录上一次的 b 值
 instance = None
-pin_16 = 9
-pin_18 = 10
+pin_up = 13
+pin_down = 16
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
@@ -82,32 +82,32 @@ def rtu_communication():
         time.sleep(0.2)
 
 def gpio_input_monitor():
-    global b, instance, pin_16, pin_18
+    global b, instance, pin_up, pin_down
     wiringpi.wiringPiSetup()  # 初始化 wiringPi 库
-    wiringpi.pinMode(pin_16, wiringpi.INPUT)  # 设置引脚 9 为输入
-    wiringpi.pullUpDnControl(pin_16, wiringpi.PUD_DOWN)  # 启用下拉电阻
-    wiringpi.pinMode(pin_18, wiringpi.INPUT)  # 设置引脚 10 为输入
-    wiringpi.pullUpDnControl(pin_18, wiringpi.PUD_DOWN)  # 启用下拉电阻
+    wiringpi.pinMode(pin_up, wiringpi.INPUT)  # 设置引脚 9 为输入
+    wiringpi.pullUpDnControl(pin_up, wiringpi.PUD_DOWN)  # 启用下拉电阻
+    wiringpi.pinMode(pin_down, wiringpi.INPUT)  # 设置引脚 10 为输入
+    wiringpi.pullUpDnControl(pin_down, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
-    last_state_16 = wiringpi.digitalRead(pin_16)
-    last_state_18 = wiringpi.digitalRead(pin_18)
+    last_state_up = wiringpi.digitalRead(pin_up)
+    last_state_down = wiringpi.digitalRead(pin_down)
 
     try:
         while True:
             if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
-                current_state_16 = wiringpi.digitalRead(pin_16)
-                current_state_18 = wiringpi.digitalRead(pin_18)
+                current_state_up = wiringpi.digitalRead(pin_up)
+                current_state_down = wiringpi.digitalRead(pin_down)
 
                 # 检测上升沿并直接操作 b 的值
-                if current_state_16 == 1 and last_state_16 == 0:
+                if current_state_up == 1 and last_state_up == 0:
                     b = min(b + 1, 100)
 
 
-                if current_state_18 == 1 and last_state_18 == 0:
+                if current_state_down == 1 and last_state_down == 0:
                     b = max(b - 1, 0)
 
 
-                last_state_16, last_state_18 = current_state_16, current_state_18
+                last_state_up, last_state_down = current_state_up, current_state_down
             
             time.sleep(0.2)
     finally:
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.62! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.63! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

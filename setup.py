@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="ucvl.zero3",
-    version="V0.1.60",
+    version="V0.1.61",
     author="赵锐剑",
     author_email="123003020@qq.com",
-    description="ucvl",
+    description="流量平衡阀智能计算核心",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     url="https://github.com/ucvl/zero3",

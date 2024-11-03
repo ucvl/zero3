@@ -11,6 +11,8 @@ a = 0.0
 b = 0.0
 previous_b = None  # 用于记录上一次的 b 值
 instance = None
+pin_16 = 9
+pin_18 = 10
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
@@ -82,32 +84,32 @@ def rtu_communication():
         time.sleep(2)
 
 def gpio_input_monitor():
-    global b, instance
+    global b, instance, pin_16, pin_18
     wiringpi.wiringPiSetup()  # 初始化 wiringPi 库
-    wiringpi.pinMode(13, wiringpi.INPUT)  # 设置引脚 13 为输入
-    wiringpi.pullUpDnControl(13, wiringpi.PUD_DOWN)  # 启用下拉电阻
-    wiringpi.pinMode(16, wiringpi.INPUT)  # 设置引脚 16 为输入
-    wiringpi.pullUpDnControl(16, wiringpi.PUD_DOWN)  # 启用下拉电阻
+    wiringpi.pinMode(pin_16, wiringpi.INPUT)  # 设置引脚 9 为输入
+    wiringpi.pullUpDnControl(pin_16, wiringpi.PUD_DOWN)  # 启用下拉电阻
+    wiringpi.pinMode(pin_18, wiringpi.INPUT)  # 设置引脚 10 为输入
+    wiringpi.pullUpDnControl(pin_18, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
-    last_state_13 = wiringpi.digitalRead(13)
-    last_state_16 = wiringpi.digitalRead(16)
+    last_state_16 = wiringpi.digitalRead(pin_16)
+    last_state_18 = wiringpi.digitalRead(pin_18)
 
     try:
         while True:
             if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
-                current_state_13 = wiringpi.digitalRead(13)
-                current_state_16 = wiringpi.digitalRead(16)
+                current_state_16 = wiringpi.digitalRead(pin_16)
+                current_state_18 = wiringpi.digitalRead(pin_18)
 
                 # 检测上升沿并直接操作 b 的值
-                if current_state_13 == 1 and last_state_13 == 0:
-                    b = min(b + 1, 100)
-                    print(f"阀门就地远程状态：{b} (引脚 13 上升沿触发)")
-
                 if current_state_16 == 1 and last_state_16 == 0:
-                    b = max(b - 1, 0)
-                    print(f"阀门就地远程状态：{b} (引脚 16 上升沿触发)")
+                    b = min(b + 1, 100)
+                    print(f"阀门就地远程状态：{b} (引脚 9 上升沿触发)")
 
-                last_state_13, last_state_16 = current_state_13, current_state_16
+                if current_state_18 == 1 and last_state_18 == 0:
+                    b = max(b - 1, 0)
+                    print(f"阀门就地远程状态：{b} (引脚 10 上升沿触发)")
+
+                last_state_16, last_state_18 = current_state_16, current_state_18
             
             time.sleep(1)
     finally:

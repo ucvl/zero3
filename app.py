@@ -1,10 +1,10 @@
-import json
 import os
 import time
 import threading
 import wiringpi
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
+from ucvl.zero3.json_file  import JSONHandler
 
 # 初始化全局变量
 a = 0.0
@@ -16,19 +16,10 @@ pin_i_down = 16
 pin_q_remote = 5
 pin_q_conn_up = 7
 json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json")  # 阀门对象的配置文件
+json_handler = JSONHandler(json_file_path)  # 初始化 JSONHandler
 
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
-
-# 加载 JSON 数据
-def load_json(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        return json.load(file)
-
-# 保存 JSON 数据
-def save_json(file_path, data):
-    with open(file_path, 'w', encoding='utf-8') as file:
-        json.dump(data, file, ensure_ascii=False, indent=4)
 
 # 从设备信息创建类
 def create_class_from_device(device):
@@ -53,11 +44,9 @@ def create_class_from_device(device):
     generated_class = type(device["Name"], (object,), attributes)
     return generated_class
 
-
 # RTU 通信函数
 def rtu_communication():
-    global a, b, previous_b, instance, rtu_resource, json_file_path
-    check_path(json_file_path)  # 添加路径检查
+    global a, b, previous_b, instance, rtu_resource, json_handler
     while True:
         try:
             # 读取操作
@@ -80,12 +69,7 @@ def rtu_communication():
                 for attempt in range(3):
                     success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
                     if success:
-                        data = load_json(json_file_path)
-                        for tag in data["DeviceTypes"][0]["Tags"]:
-                            if tag["Name"] == "行程给定":
-                                tag["实时值"] = b
-                                break
-                        save_json(json_file_path, data)
+                        json_handler.update_tag_real_value("行程给定", b) # 更新 JSON 中的实时值
                         previous_b = b  # 更新 previous_b
                         break
                     else:
@@ -107,7 +91,7 @@ def gpio_input_monitor():
     wiringpi.pullUpDnControl(pin_i_down, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
     wiringpi.pinMode(pin_q_remote, wiringpi.OUTPUT)  # 设置引脚 pin_q_remote 为输出
-    wiringpi.pinMode(pin_q_conn_up, wiringpi.OUTPUT)  # 设置引脚 pin_q_remote 为输出
+    wiringpi.pinMode(pin_q_conn_up, wiringpi.OUTPUT)  # 设置引脚 pin_q_conn_up 为输出
 
     last_state_up = wiringpi.digitalRead(pin_i_up)
     last_state_down = wiringpi.digitalRead(pin_i_down)
@@ -146,11 +130,6 @@ def gpio_input_monitor():
     finally:
         print("清理 GPIO 状态")
 
-def check_path(file_path):
-    if not os.path.exists(file_path):
-        print(f"文件路径 {file_path} 不存在，程序退出。")
-        exit(1)
-
 # 启动线程
 rtu_thread = threading.Thread(target=rtu_communication)
 rtu_thread.start()
@@ -160,9 +139,9 @@ gpio_thread.start()
 
 # 主函数
 def main():
-    global instance, json_file_path
-    check_path(json_file_path)  # 添加路径检查
-    data = load_json(json_file_path)
+    global instance, json_handler
+    json_handler = JSONHandler(json_file_path)  # 将路径传递给类进行初始化
+    data = json_handler.data
     generated_class = create_class_from_device(data["DeviceTypes"][0])
 
     instance = generated_class()

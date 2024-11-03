@@ -49,7 +49,6 @@ def rtu_communication():
             result = rtu_resource.read_holding_registers(DataAddress=0, DataCount=1, SlaveAddress=1)
             if result:
                 a = (result[0] / 10000.0) * 100
-                print(f"读取的百分比值：{a}%")
                 if instance and hasattr(instance, '行程反馈'):
                     instance.行程反馈["实时值"] = a
             else:
@@ -57,7 +56,7 @@ def rtu_communication():
         except Exception as e:
             print(f"读取错误：{e}")
 
-        time.sleep(2)
+        time.sleep(0.2)
 
         # 只有在 b 值发生变化时才进行写入操作
         if b != previous_b:
@@ -66,7 +65,6 @@ def rtu_communication():
                 for attempt in range(3):
                     success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
                     if success:
-                        print("写入成功")
                         data = load_json(json_file_path)
                         for tag in data["DeviceTypes"][0]["Tags"]:
                             if tag["Name"] == "行程给定":
@@ -81,7 +79,7 @@ def rtu_communication():
             except Exception as e:
                 print(f"写入错误：{e}")
 
-        time.sleep(2)
+        time.sleep(0.2)
 
 def gpio_input_monitor():
     global b, instance, pin_16, pin_18
@@ -103,23 +101,24 @@ def gpio_input_monitor():
                 # 检测上升沿并直接操作 b 的值
                 if current_state_16 == 1 and last_state_16 == 0:
                     b = min(b + 1, 100)
-                    print(f"阀门就地远程状态：{b} (引脚 9 上升沿触发)")
+
 
                 if current_state_18 == 1 and last_state_18 == 0:
                     b = max(b - 1, 0)
-                    print(f"阀门就地远程状态：{b} (引脚 10 上升沿触发)")
+
 
                 last_state_16, last_state_18 = current_state_16, current_state_18
             
-            time.sleep(1)
+            time.sleep(0.2)
     finally:
         print("清理 GPIO 状态")
     
 
 # 启动线程
 rtu_thread = threading.Thread(target=rtu_communication)
-gpio_thread = threading.Thread(target=gpio_input_monitor)
 rtu_thread.start()
+
+gpio_thread = threading.Thread(target=gpio_input_monitor)
 gpio_thread.start()
 
 # 主函数
@@ -137,7 +136,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.60! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.62! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

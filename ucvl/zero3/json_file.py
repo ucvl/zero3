@@ -16,6 +16,7 @@ class JSONHandler:
         with open(self.file_path, 'w', encoding='utf-8') as file:
             json.dump(self.data, file, ensure_ascii=False, indent=4)
 
+
     def update_tag_real_value(self, tag_name, real_value):
         for device in self.data["DeviceTypes"]:
             for tag in device["Tags"]:

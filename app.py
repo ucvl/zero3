@@ -8,8 +8,8 @@ from ucvl.zero3.json_file  import JSONHandler
 
 # 初始化全局变量
 a = 0.0
-b = 0.0
-previous_b = 0  # 用于记录上一次的 b 值
+
+previous_b = 0  # 用于记录上一次的 instance.行程给定['实时值'] 值
 instance = None
 pin_i_up = 13
 pin_i_down = 16
@@ -46,7 +46,7 @@ def create_class_from_device(device):
 
 # RTU 通信函数
 def rtu_communication():
-    global a, b, previous_b, instance, rtu_resource, json_handler
+    global a, previous_b, instance, rtu_resource, json_handler
     while True:
         try:
             # 读取操作
@@ -62,15 +62,15 @@ def rtu_communication():
 
         time.sleep(0.1)
 
-        # 只有在 b 值发生变化时才进行写入操作
-        if b != previous_b:
+        # 只有在 instance.行程给定['实时值'] 值发生变化时才进行写入操作
+        if instance.行程给定['实时值'] != previous_b:
             try:
-                converted_b = int((b / 100.0) * 10000)
+                converted_b = int((instance.行程给定['实时值'] / 100.0) * 10000)
                 for attempt in range(3):
                     success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
                     if success:
-                        json_handler.update_tag_real_value("行程给定", b) # 更新 JSON 中的实时值
-                        previous_b = b  # 更新 previous_b
+                        json_handler.update_tag_real_value("行程给定", instance.行程给定['实时值']) # 更新 JSON 中的实时值
+                        previous_b = instance.行程给定['实时值']  # 更新 previous_b
                         break
                     else:
                         print(f"写入失败，尝试 {attempt + 1}/3")
@@ -81,7 +81,7 @@ def rtu_communication():
         time.sleep(0.1)
 
 def gpio_input_monitor():
-    global b, instance, pin_i_up, pin_i_down, pin_q_remote, pin_q_conn_up
+    global  instance, pin_i_up, pin_i_down, pin_q_remote, pin_q_conn_up
     wiringpi.wiringPiSetup()  # 初始化 wiringPi 库
 
     wiringpi.pinMode(pin_i_up, wiringpi.INPUT)  # 设置引脚 13 为输入
@@ -102,12 +102,12 @@ def gpio_input_monitor():
                 current_state_up = wiringpi.digitalRead(pin_i_up)
                 current_state_down = wiringpi.digitalRead(pin_i_down)
 
-                # 检测上升沿并直接操作 b 的值
+                # 检测上升沿并直接操作 instance.行程给定['实时值'] 的值
                 if current_state_up == 1 and last_state_up == 0:
-                    b = min(b + 1, 100)
+                    instance.行程给定['实时值'] = min(instance.行程给定['实时值'] + 1, 100)
 
                 if current_state_down == 1 and last_state_down == 0:
-                    b = max(b - 1, 0)
+                    instance.行程给定['实时值'] = max(instance.行程给定['实时值'] - 1, 0)
 
                 last_state_up, last_state_down = current_state_up, current_state_down
 
@@ -139,13 +139,13 @@ gpio_thread.start()
 
 # 主函数
 def main():
-    global instance, json_handler,b
+    global instance, json_handler
     json_handler = JSONHandler(json_file_path)  # 将路径传递给类进行初始化
     data = json_handler.data
     generated_class = create_class_from_device(data["DeviceTypes"][0])
 
     instance = generated_class()
-    b=instance.行程给定['实时值']
+ 
 
 if __name__ == "__main__":
     main()
@@ -153,7 +153,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.73! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.74! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

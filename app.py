@@ -15,7 +15,8 @@ pin_i_up = 13
 pin_i_down = 16
 pin_q_remote = 5
 pin_q_conn_up = 7
-json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json") # 阀门对象的配置文件 
+json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json")  # 阀门对象的配置文件
+
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
@@ -31,20 +32,25 @@ def save_json(file_path, data):
 
 # 从设备信息创建类
 def create_class_from_device(device):
-    attributes = {tag["Name"]: {
-        "ID": tag["ID"],
-        "Type": tag["Type"],
-        "RW": tag["RW"],
-        "起始值": tag["起始值"],
-        "实时值": tag["实时值"]
-    } for tag in device["Tags"]}
+    attributes = {}
+    for tag in device["Tags"]:
+        if tag["RW"] == "读写" and tag["Name"] == "行程给定":
+            if tag["实时值"] == 0:
+                tag["实时值"] = tag["起始值"]
+        attributes[tag["Name"]] = {
+            "ID": tag["ID"],
+            "Type": tag["Type"],
+            "RW": tag["RW"],
+            "起始值": tag["起始值"],
+            "实时值": tag["实时值"]
+        }
     generated_class = type(device["Name"], (object,), attributes)
     return generated_class
 
 # RTU 通信函数
 def rtu_communication():
-    global a, b, previous_b, instance, rtu_resource,json_file_path
-    check_path(json_file_path) # 添加路径检查
+    global a, b, previous_b, instance, rtu_resource, json_file_path
+    check_path(json_file_path)  # 添加路径检查
     while True:
         try:
             # 读取操作
@@ -84,7 +90,7 @@ def rtu_communication():
         time.sleep(0.1)
 
 def gpio_input_monitor():
-    global b, instance, pin_i_up, pin_i_down, pin_q_remote
+    global b, instance, pin_i_up, pin_i_down, pin_q_remote, pin_q_conn_up
     wiringpi.wiringPiSetup()  # 初始化 wiringPi 库
 
     wiringpi.pinMode(pin_i_up, wiringpi.INPUT)  # 设置引脚 13 为输入
@@ -132,9 +138,10 @@ def gpio_input_monitor():
             time.sleep(0.2)
     finally:
         print("清理 GPIO 状态")
-def check_path(file_path): 
-    if not os.path.exists(file_path): 
-        print(f"文件路径 {file_path} 不存在，程序退出。") 
+
+def check_path(file_path):
+    if not os.path.exists(file_path):
+        print(f"文件路径 {file_path} 不存在，程序退出。")
         exit(1)
 
 # 启动线程
@@ -147,7 +154,7 @@ gpio_thread.start()
 # 主函数
 def main():
     global instance, json_file_path
-    check_path(json_file_path) # 添加路径检查 
+    check_path(json_file_path)  # 添加路径检查
     data = load_json(json_file_path)
     generated_class = create_class_from_device(data["DeviceTypes"][0])
 
@@ -159,7 +166,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.67! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.68! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

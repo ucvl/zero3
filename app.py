@@ -43,8 +43,8 @@ def create_class_from_device(device):
 # RTU 通信函数
 def rtu_communication():
     global a, b, previous_b, instance, rtu_resource
-    json_file_path = os.path.join(os.path.dirname(__file__), "DeviceTypes.json")
-
+    json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json") # 修改后的路径 
+    check_path(json_file_path) # 添加路径检查
     while True:
         try:
             # 读取操作
@@ -123,6 +123,10 @@ def gpio_input_monitor():
             time.sleep(0.2)
     finally:
         print("清理 GPIO 状态")
+def check_path(file_path):
+    if not os.path.exists(file_path):
+        print(f"文件路径 {file_path} 不存在，程序退出。")
+        exit(1)
 
 # 启动线程
 rtu_thread = threading.Thread(target=rtu_communication)
@@ -134,7 +138,8 @@ gpio_thread.start()
 # 主函数
 def main():
     global instance
-    json_file_path = os.path.join(os.path.dirname(__file__), "DeviceTypes.json")
+    json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json") # 修改后的路径 
+    check_path(json_file_path) # 添加路径检查 
     data = load_json(json_file_path)
     generated_class = create_class_from_device(data["DeviceTypes"][0])
 
@@ -146,7 +151,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.64! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.65! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

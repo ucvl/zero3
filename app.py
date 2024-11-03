@@ -34,18 +34,25 @@ def save_json(file_path, data):
 def create_class_from_device(device):
     attributes = {}
     for tag in device["Tags"]:
-        if tag["RW"] == "rw" and tag["Name"] == "行程给定":
-            if tag["实时值"] == 0:
-                tag["实时值"] = tag["起始值"]
-        attributes[tag["Name"]] = {
-            "ID": tag["ID"],
-            "Type": tag["Type"],
-            "RW": tag["RW"],
-            "起始值": tag["起始值"],
-            "实时值": tag["实时值"]
-        }
+        if tag["RW"] == "rw" and tag["实时值"] != tag["起始值"]:
+            attributes[tag["Name"]] = {
+                "ID": tag["ID"],
+                "Type": tag["Type"],
+                "RW": tag["RW"],
+                "起始值": tag["起始值"],
+                "实时值": tag["实时值"]  # 用 JSON 中的实时值
+            }
+        else:
+            attributes[tag["Name"]] = {
+                "ID": tag["ID"],
+                "Type": tag["Type"],
+                "RW": tag["RW"],
+                "起始值": tag["起始值"],
+                "实时值": tag["起始值"]  # 用起始值进行初始化
+            }
     generated_class = type(device["Name"], (object,), attributes)
     return generated_class
+
 
 # RTU 通信函数
 def rtu_communication():
@@ -166,7 +173,7 @@ if __name__ == "__main__":
 # 无限循环
 while True:
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.69! 当前时间是 {current_time}")
+    print(f"Hello, 优创未来, version V0.1.70! 当前时间是 {current_time}")
     print(f"阀门开度：{instance.行程反馈['实时值']}")
     print(f"阀门给定开度：{instance.行程给定['实时值']}")
     print(f"阀门就地远程状态：{instance.远程['实时值']}")

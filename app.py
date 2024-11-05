@@ -11,14 +11,15 @@ DEVICE_TYPES_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__))
 DEVICE_INFOS_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceInfos.json")  # 阀门对象的配置文件
 
 # 初始化 JSON 处理器
-device_types_handler = JSONHandler(DEVICE_TYPES_FILE_PATH)  # 初始化 DeviceTypes JSONHandler
 device_infos_handler = JSONHandler(DEVICE_INFOS_FILE_PATH)  # 初始化 DeviceInfos JSONHandler
 
-# 加载设备类型和设备信息
+# 加载设备类型
+device_types_handler = JSONHandler(DEVICE_TYPES_FILE_PATH)  # 初始化 DeviceTypes JSONHandler
 device_types_data = device_types_handler.data
-device_infos_data = device_infos_handler.data
 
 device_types = device_types_data["DeviceTypes"]  # 设备类型全局变量，常驻内存
+
+# 初始化全局变量
 a = 0.0
 previous_b = 0  # 用于记录上一次的 instance.行程给定['实时值'] 值
 instances = []  # 用于保存所有实例化的设备对象
@@ -186,7 +187,7 @@ def main():
     generated_class = create_device_class(device_type_id)
 
     # 创建实例对象，基于 DeviceInfos 中的设备信息
-    for device_info in device_infos_data["DeviceInfos"]:
+    for device_info in device_infos_handler.data["DeviceInfos"]:
         if device_info["DevTypeID"] == device_type_id:
             instance = create_device_instance(device_info, generated_class)
             instances.append(instance)
@@ -199,6 +200,8 @@ def start_threads():
     """
     rtu_thread = threading.Thread(target=rtu_communication)
     gpio_thread = threading.Thread(target=gpio_input_monitor)
+    rtu_thread.daemon = True  # 确保线程在主程序退出时自动退出
+    gpio_thread.daemon = True  # 确保线程在主程序退出时自动退出
     rtu_thread.start()
     gpio_thread.start()
 
@@ -207,11 +210,14 @@ if __name__ == "__main__":
     start_threads()
 
     # 无限循环打印状态信息
-    while True:
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 优创未来, version V0.1.75! 当前时间是 {current_time}")
-        for instance in instances:
-            print(f"阀门开度：{instance.行程反馈['实时值']}")
-            print(f"阀门给定开度：{instance.行程给定['实时值']}")
-            print(f"阀门就地远程状态：{instance.远程['实时值']}")
-        time.sleep(2)
+    try:
+        while True:
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"Hello, 优创未来, version V0.1.76! 当前时间是 {current_time}")
+            for instance in instances:
+                print(f"阀门开度：{instance.行程反馈['实时值']}")
+                print(f"阀门给定开度：{instance.行程给定['实时值']}")
+                print(f"阀门就地远程状态：{instance.远程['实时值']}")
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print("程序已手动终止")

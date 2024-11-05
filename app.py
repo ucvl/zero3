@@ -73,7 +73,7 @@ class DeviceTypeFactory:
                 def prop(self, value):
                     setattr(self, private_attr, value)
                     print(f"正在更新 JSON，tag_name: {tag_id}, real_value: {value}")
-                    device_infos_handler.update_tag_real_value_by_device_info(instance_info_id_map[self], tag_name=tag_name, real_value=value)
+                    device_infos_handler.update_tag_real_value_by_device_info(instance_info_id_map[id(self)], tag_name=tag_name, real_value=value)
 
                 return prop
 
@@ -198,7 +198,7 @@ def main():
         if device_info["DevTypeID"] == device_type_id:
             instance = create_device_instance(device_info, generated_class)
             instances.append(instance)
-            instance_info_id_map[instance] = device_info["ID"]
+            instance_info_id_map[id(instance)] = device_info["ID"]  # 使用 id(instance) 作为键
 
 # 启动线程
 def start_threads():
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     try:
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Hello, 优创未来, version V0.1.80! 当前时间是 {current_time}")
+            print(f"Hello, 优创未来, version V0.1.81! 当前时间是 {current_time}")
             for instance in instances:
                 print(f"阀门开度：{instance.行程反馈}")
                 print(f"阀门给定开度：{instance.行程给定}")

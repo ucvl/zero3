@@ -4,57 +4,103 @@ import threading
 import wiringpi
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
-from ucvl.zero3.json_file  import JSONHandler
+from ucvl.zero3.json_file import JSONHandler
 
-# 初始化全局变量
+# 配置文件路径
+DEVICE_TYPES_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json")  # 设备类型的配置文件
+DEVICE_INFOS_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceInfos.json")  # 阀门对象的配置文件
+
+# 初始化 JSON 处理器
+device_types_handler = JSONHandler(DEVICE_TYPES_FILE_PATH)  # 初始化 DeviceTypes JSONHandler
+device_infos_handler = JSONHandler(DEVICE_INFOS_FILE_PATH)  # 初始化 DeviceInfos JSONHandler
+
+# 加载设备类型和设备信息
+device_types_data = device_types_handler.data
+device_infos_data = device_infos_handler.data
+
+device_types = device_types_data["DeviceTypes"]  # 设备类型全局变量，常驻内存
 a = 0.0
-
 previous_b = 0  # 用于记录上一次的 instance.行程给定['实时值'] 值
-instance = None
-pin_i_up = 13
-pin_i_down = 16
-pin_q_remote = 5
-pin_q_conn_up = 7
-json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json")  # 阀门对象的配置文件
-json_handler = JSONHandler(json_file_path)  # 初始化 JSONHandler
+instances = []  # 用于保存所有实例化的设备对象
+instance_info_id_map = {}  # 记录实例化的设备信息 ID 和实例对象的映射关系
+
+# GPIO 引脚配置
+PIN_I_UP = 13
+PIN_I_DOWN = 16
+PIN_Q_REMOTE = 5
+PIN_Q_CONN_UP = 7
 
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
-# 从设备信息创建类
-def create_class_from_device(device):
+# 从设备类型创建动态类
+def create_device_class(device_type_id):
+    """
+    根据设备类型 ID 生成动态类。
+    :param device_type_id: 设备类型 ID
+    :return: 动态生成的设备类
+    """
+    device = next((d for d in device_types if d["ID"] == device_type_id), None)
+    if not device:
+        raise ValueError(f"Device with ID {device_type_id} not found in DeviceTypes")
+
     attributes = {}
     for tag in device["Tags"]:
-        if tag["RW"] == "rw" and tag["实时值"] != 0:
-            attributes[tag["Name"]] = {
+        attributes[tag["Name"]] = {
+            "ID": tag["ID"],
+            "Type": tag["Type"],
+            "RW": tag["RW"],
+            "起始值": tag["起始值"],
+            "实时值": None  # 初始化时不设置实时值，初始化后在设备对象生成时进行设置
+        }
+
+        # 属性变更监控器，自动写入 JSON
+        def make_property_setter(tag_name):
+            def setter(self, value):
+                if self.__dict__[tag_name]["实时值"] != value:
+                    self.__dict__[tag_name]["实时值"] = value
+                    device_infos_handler.update_tag_real_value(tag_name=self.__dict__[tag_name]["ID"], real_value=value)
+            return setter
+
+        attributes[f"set_{tag['Name']}_value"] = make_property_setter(tag["Name"])
+
+    return type(device["Name"], (object,), attributes)
+
+# 根据设备信息创建设备实例
+def create_device_instance(device_info, device_class):
+    """
+    根据设备信息创建设备实例。
+    :param device_info: 设备信息字典
+    :param device_class: 动态生成的设备类
+    :return: 设备实例
+    """
+    instance = device_class()
+    for tag in device_info["Tags"]:
+        if hasattr(instance, tag["Name"]):
+            setattr(instance, tag["Name"], {
                 "ID": tag["ID"],
                 "Type": tag["Type"],
                 "RW": tag["RW"],
                 "起始值": tag["起始值"],
-                "实时值": tag["实时值"]  # 用 JSON 中的实时值
-            }
-        else:
-            attributes[tag["Name"]] = {
-                "ID": tag["ID"],
-                "Type": tag["Type"],
-                "RW": tag["RW"],
-                "起始值": tag["起始值"],
-                "实时值": tag["起始值"]  # 用起始值进行初始化
-            }
-    generated_class = type(device["Name"], (object,), attributes)
-    return generated_class
+                "实时值": tag["实时值"] if tag["实时值"] != 0 else tag["起始值"]
+            })
+    return instance
 
 # RTU 通信函数
 def rtu_communication():
-    global a, previous_b, instance, rtu_resource, json_handler
+    """
+    RTU 通信函数，负责读取和写入设备的实时值。
+    """
+    global a, previous_b, instances, rtu_resource
     while True:
         try:
             # 读取操作
             result = rtu_resource.read_holding_registers(DataAddress=0, DataCount=1, SlaveAddress=1)
             if result:
                 a = (result[0] / 10000.0) * 100
-                if instance and hasattr(instance, '行程反馈'):
-                    instance.行程反馈["实时值"] = a
+                for instance in instances:
+                    if hasattr(instance, '行程反馈'):
+                        instance.set_行程反馈_value(a)
             else:
                 print("读取失败")
         except Exception as e:
@@ -62,99 +108,110 @@ def rtu_communication():
 
         time.sleep(0.1)
 
-        # 只有在 instance.行程给定['实时值'] 值发生变化时才进行写入操作
-        if instance.行程给定['实时值'] != previous_b:
-            try:
-                converted_b = int((instance.行程给定['实时值'] / 100.0) * 10000)
-                for attempt in range(3):
-                    success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
-                    if success:
-                        json_handler.update_tag_real_value("行程给定", instance.行程给定['实时值']) # 更新 JSON 中的实时值
-                        previous_b = instance.行程给定['实时值']  # 更新 previous_b
-                        break
-                    else:
-                        print(f"写入失败，尝试 {attempt + 1}/3")
-                        time.sleep(1)
-            except Exception as e:
-                print(f"写入错误：{e}")
+        for instance in instances:
+            # 只有在 instance.行程给定['实时值'] 值发生变化时才进行写入操作
+            if instance.行程给定['实时值'] != previous_b:
+                try:
+                    converted_b = int((instance.行程给定['实时值'] / 100.0) * 10000)
+                    for attempt in range(3):
+                        success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
+                        if success:
+                            instance.set_行程给定_value(instance.行程给定['实时值'])
+                            previous_b = instance.行程给定['实时值']  # 更新 previous_b
+                            break
+                        else:
+                            print(f"写入失败，尝试 {attempt + 1}/3")
+                            time.sleep(1)
+                except Exception as e:
+                    print(f"写入错误：{e}")
 
         time.sleep(0.1)
 
 def gpio_input_monitor():
-    global  instance, pin_i_up, pin_i_down, pin_q_remote, pin_q_conn_up
+    """
+    GPIO 输入监控函数，负责检测输入引脚的状态并对设备实例进行相应操作。
+    """
+    global instances
     wiringpi.wiringPiSetup()  # 初始化 wiringPi 库
 
-    wiringpi.pinMode(pin_i_up, wiringpi.INPUT)  # 设置引脚 13 为输入
-    wiringpi.pullUpDnControl(pin_i_up, wiringpi.PUD_DOWN)  # 启用下拉电阻
+    # 配置引脚模式
+    wiringpi.pinMode(PIN_I_UP, wiringpi.INPUT)
+    wiringpi.pullUpDnControl(PIN_I_UP, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
-    wiringpi.pinMode(pin_i_down, wiringpi.INPUT)  # 设置引脚 16 为输入
-    wiringpi.pullUpDnControl(pin_i_down, wiringpi.PUD_DOWN)  # 启用下拉电阻
+    wiringpi.pinMode(PIN_I_DOWN, wiringpi.INPUT)
+    wiringpi.pullUpDnControl(PIN_I_DOWN, wiringpi.PUD_DOWN)  # 启用下拉电阻
 
-    wiringpi.pinMode(pin_q_remote, wiringpi.OUTPUT)  # 设置引脚 pin_q_remote 为输出
-    wiringpi.pinMode(pin_q_conn_up, wiringpi.OUTPUT)  # 设置引脚 pin_q_conn_up 为输出
+    wiringpi.pinMode(PIN_Q_REMOTE, wiringpi.OUTPUT)  # 设置引脚为输出
+    wiringpi.pinMode(PIN_Q_CONN_UP, wiringpi.OUTPUT)  # 设置引脚为输出
 
-    last_state_up = wiringpi.digitalRead(pin_i_up)
-    last_state_down = wiringpi.digitalRead(pin_i_down)
+    last_state_up = wiringpi.digitalRead(PIN_I_UP)
+    last_state_down = wiringpi.digitalRead(PIN_I_DOWN)
 
     try:
         while True:
-            if instance and hasattr(instance, '远程') and instance.远程["实时值"] == 0:
-                current_state_up = wiringpi.digitalRead(pin_i_up)
-                current_state_down = wiringpi.digitalRead(pin_i_down)
+            for instance in instances:
+                if hasattr(instance, '远程') and instance.远程["实时值"] == 0:
+                    current_state_up = wiringpi.digitalRead(PIN_I_UP)
+                    current_state_down = wiringpi.digitalRead(PIN_I_DOWN)
 
-                # 检测上升沿并直接操作 instance.行程给定['实时值'] 的值
-                if current_state_up == 1 and last_state_up == 0:
-                    instance.行程给定['实时值'] = min(instance.行程给定['实时值'] + 1, 100)
+                    # 检测上升沿并直接操作 instance.行程给定['实时值'] 的值
+                    if current_state_up == 1 and last_state_up == 0:
+                        instance.set_行程给定_value(min(instance.行程给定['实时值'] + 1, 100))
 
-                if current_state_down == 1 and last_state_down == 0:
-                    instance.行程给定['实时值'] = max(instance.行程给定['实时值'] - 1, 0)
+                    if current_state_down == 1 and last_state_down == 0:
+                        instance.set_行程给定_value(max(instance.行程给定['实时值'] - 1, 0))
 
-                last_state_up, last_state_down = current_state_up, current_state_down
+                    last_state_up, last_state_down = current_state_up, current_state_down
 
-            # 检测 instance 的实时值并在 pin_q_remote 上输出
-            if instance and hasattr(instance, '远程'):
-                if instance.远程["实时值"] == 1:
-                    wiringpi.digitalWrite(pin_q_remote, 1)
-                else:
-                    wiringpi.digitalWrite(pin_q_remote, 0)
+            # 检测 instance 的实时值并在引脚上输出
+            for instance in instances:
+                if hasattr(instance, '远程'):
+                    wiringpi.digitalWrite(PIN_Q_REMOTE, 1 if instance.远程["实时值"] == 1 else 0)
 
-            # 检测 instance 的 ER 实时值的第0位并在 pin_q_conn_up 上输出
-            if instance and hasattr(instance, 'ER'):
-                er_value = instance.ER["实时值"]
-                if er_value & 1:  # 检查第0位是否为1
-                    wiringpi.digitalWrite(pin_q_conn_up, 0)
-                else:
-                    wiringpi.digitalWrite(pin_q_conn_up, 1)
+                if hasattr(instance, 'ER'):
+                    er_value = instance.ER["实时值"]
+                    wiringpi.digitalWrite(PIN_Q_CONN_UP, 0 if er_value & 1 else 1)  # 检查第0位是否为1
 
             time.sleep(0.2)
     finally:
         print("清理 GPIO 状态")
 
-# 启动线程
-rtu_thread = threading.Thread(target=rtu_communication)
-rtu_thread.start()
-
-gpio_thread = threading.Thread(target=gpio_input_monitor)
-gpio_thread.start()
-
 # 主函数
 def main():
-    global instance, json_handler
-    json_handler = JSONHandler(json_file_path)  # 将路径传递给类进行初始化
-    data = json_handler.data
-    generated_class = create_class_from_device(data["DeviceTypes"][0])
+    """
+    主函数，负责创建设备类和设备实例。
+    """
+    global instances, instance_info_id_map
+    device_type_id = 1  # 假设我们选择 ID 为 1 的设备类型
+    generated_class = create_device_class(device_type_id)
 
-    instance = generated_class()
- 
+    # 创建实例对象，基于 DeviceInfos 中的设备信息
+    for device_info in device_infos_data["DeviceInfos"]:
+        if device_info["DevTypeID"] == device_type_id:
+            instance = create_device_instance(device_info, generated_class)
+            instances.append(instance)
+            instance_info_id_map[instance] = device_info["ID"]
+
+# 启动线程
+def start_threads():
+    """
+    启动 RTU 通信和 GPIO 输入监控线程。
+    """
+    rtu_thread = threading.Thread(target=rtu_communication)
+    gpio_thread = threading.Thread(target=gpio_input_monitor)
+    rtu_thread.start()
+    gpio_thread.start()
 
 if __name__ == "__main__":
     main()
+    start_threads()
 
-# 无限循环
-while True:
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"Hello, 优创未来, version V0.1.74! 当前时间是 {current_time}")
-    print(f"阀门开度：{instance.行程反馈['实时值']}")
-    print(f"阀门给定开度：{instance.行程给定['实时值']}")
-    print(f"阀门就地远程状态：{instance.远程['实时值']}")
-    time.sleep(2)
+    # 无限循环打印状态信息
+    while True:
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"Hello, 优创未来, version V0.1.75! 当前时间是 {current_time}")
+        for instance in instances:
+            print(f"阀门开度：{instance.行程反馈['实时值']}")
+            print(f"阀门给定开度：{instance.行程给定['实时值']}")
+            print(f"阀门就地远程状态：{instance.远程['实时值']}")
+        time.sleep(2)

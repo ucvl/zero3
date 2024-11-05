@@ -17,6 +17,13 @@ device_infos_handler = JSONHandler(DEVICE_INFOS_FILE_PATH)  # 初始化 DeviceIn
 device_types_handler = JSONHandler(DEVICE_TYPES_FILE_PATH)  # 初始化 DeviceTypes JSONHandler
 device_types_data = device_types_handler.data
 
+# 确保加载的 JSON 数据中存在 "DeviceTypes" 键
+def check_device_types_data():
+    if "DeviceTypes" not in device_types_data:
+        raise KeyError("DeviceTypes 键在 JSON 数据中找不到，请检查 DeviceTypes.json 文件的结构。")
+    print(f"加载的 device_types_data: {device_types_data}")
+
+check_device_types_data()
 device_types = device_types_data["DeviceTypes"]  # 设备类型全局变量，常驻内存
 
 # 初始化全局变量
@@ -43,7 +50,7 @@ def create_device_class(device_type_id):
     """
     device = next((d for d in device_types if d["ID"] == device_type_id), None)
     if not device:
-        raise ValueError(f"Device with ID {device_type_id} not found in DeviceTypes")
+        raise ValueError(f"Device with ID {device_type_id} not found in DeviceTypes, device_types: {device_types}")
 
     attributes = {}
     for tag in device["Tags"]:
@@ -54,16 +61,6 @@ def create_device_class(device_type_id):
             "起始值": tag["起始值"],
             "实时值": None  # 初始化时不设置实时值，初始化后在设备对象生成时进行设置
         }
-
-        # 属性变更监控器，自动写入 JSON
-        def make_property_setter(tag_name):
-            def setter(self, value):
-                if self.__dict__[tag_name]["实时值"] != value:
-                    self.__dict__[tag_name]["实时值"] = value
-                    device_infos_handler.update_tag_real_value(tag_name=self.__dict__[tag_name]["ID"], real_value=value)
-            return setter
-
-        attributes[f"set_{tag['Name']}_value"] = make_property_setter(tag["Name"])
 
     return type(device["Name"], (object,), attributes)
 
@@ -101,7 +98,7 @@ def rtu_communication():
                 a = (result[0] / 10000.0) * 100
                 for instance in instances:
                     if hasattr(instance, '行程反馈'):
-                        instance.set_行程反馈_value(a)
+                        instance.行程反馈['实时值'] = a
             else:
                 print("读取失败")
         except Exception as e:
@@ -117,8 +114,9 @@ def rtu_communication():
                     for attempt in range(3):
                         success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
                         if success:
-                            instance.set_行程给定_value(instance.行程给定['实时值'])
                             previous_b = instance.行程给定['实时值']  # 更新 previous_b
+                            print(f"正在更新 JSON，tag_name: {instance.行程给定['ID']}, real_value: {instance.行程给定['实时值']}")
+                            device_infos_handler.update_tag_real_value(tag_name=instance.行程给定['ID'], real_value=instance.行程给定['实时值'])
                             break
                         else:
                             print(f"写入失败，尝试 {attempt + 1}/3")
@@ -157,10 +155,10 @@ def gpio_input_monitor():
 
                     # 检测上升沿并直接操作 instance.行程给定['实时值'] 的值
                     if current_state_up == 1 and last_state_up == 0:
-                        instance.set_行程给定_value(min(instance.行程给定['实时值'] + 1, 100))
+                        instance.行程给定['实时值'] = min(instance.行程给定['实时值'] + 1, 100)
 
                     if current_state_down == 1 and last_state_down == 0:
-                        instance.set_行程给定_value(max(instance.行程给定['实时值'] - 1, 0))
+                        instance.行程给定['实时值'] = max(instance.行程给定['实时值'] - 1, 0)
 
                     last_state_up, last_state_down = current_state_up, current_state_down
 
@@ -213,7 +211,7 @@ if __name__ == "__main__":
     try:
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Hello, 优创未来, version V0.1.76! 当前时间是 {current_time}")
+            print(f"Hello, 优创未来, version V0.1.77! 当前时间是 {current_time}")
             for instance in instances:
                 print(f"阀门开度：{instance.行程反馈['实时值']}")
                 print(f"阀门给定开度：{instance.行程给定['实时值']}")

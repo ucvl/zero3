@@ -28,7 +28,7 @@ device_types = device_types_data["DeviceTypes"]  # 设备类型全局变量，�
 
 # 初始化全局变量
 a = 0.0
-previous_b = 0  # 用于记录上一次的 instance.行程给定['实时值'] 值
+previous_b = 0  # 用于记录上一次的 instance.行程给定 值
 instances = []  # 用于保存所有实例化的设备对象
 instance_info_id_map = {}  # 记录实例化的设备信息 ID 和实例对象的映射关系
 
@@ -72,8 +72,10 @@ class DeviceTypeFactory:
                 @prop.setter
                 def prop(self, value):
                     setattr(self, private_attr, value)
-                    print(f"正在更新 JSON，tag_name: {tag_id}, real_value: {value}")
-                    device_infos_handler.update_tag_real_value_by_device_info(instance_info_id_map[id(self)], tag_name=tag_name, real_value=value)
+                    # 确保实例已经完成初始化并存在于 instance_info_id_map 中
+                    if id(self) in instance_info_id_map:
+                        print(f"正在更新 JSON，tag_name: {tag_name}, real_value: {value}")
+                        device_infos_handler.update_tag_real_value_by_device_info(instance_info_id_map[id(self)], tag_name=tag_name, real_value=value)
 
                 return prop
 
@@ -92,6 +94,7 @@ def create_device_instance(device_info, device_class):
     instance = device_class()
     for tag in device_info["Tags"]:
         if hasattr(instance, tag["Name"]):
+            # 在初始化阶段禁用自动写入 JSON，以避免在对象未完全初始化时触发写入操作
             setattr(instance, tag["Name"], tag["实时值"] if tag["实时值"] != 0 else tag["起始值"])
     return instance
 
@@ -220,7 +223,7 @@ if __name__ == "__main__":
     try:
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Hello, 优创未来, version V0.1.81! 当前时间是 {current_time}")
+            print(f"Hello, 优创未来, version V0.1.82! 当前时间是 {current_time}")
             for instance in instances:
                 print(f"阀门开度：{instance.行程反馈}")
                 print(f"阀门给定开度：{instance.行程给定}")

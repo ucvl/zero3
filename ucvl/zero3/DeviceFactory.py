@@ -5,15 +5,13 @@ class DeviceTypeFactory:
     _device_classes = {}
 
     @classmethod
-    def get_device_class(cls, device_type_id, device_types):
-        # 增加 device_types 参数，用于查找设备类型
+    def get_device_class(cls, device_type_id):
         if device_type_id not in cls._device_classes:
-            cls._device_classes[device_type_id] = cls._create_device_class(device_type_id, device_types)
+            cls._device_classes[device_type_id] = cls._create_device_class(device_type_id)
         return cls._device_classes[device_type_id]
 
     @staticmethod
-    def _create_device_class(device_type_id, device_types):
-        # 传入 device_types 参数，确保可以使用设备类型数据
+    def _create_device_class(device_type_id):
         device = next((d for d in device_types if d["ID"] == device_type_id), None)
         if not device:
             raise ValueError(f"Device with ID {device_type_id} not found in DeviceTypes, device_types: {device_types}")

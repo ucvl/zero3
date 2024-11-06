@@ -6,7 +6,7 @@ import wiringpi
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
 from ucvl.zero3.json_file import JSONHandler
-
+from ucvl.zero3.device_type_factory import DeviceTypeFactory  # 导入 DeviceTypeFactory
 # 配置文件路径
 DEVICE_TYPES_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json")  # 设备类型的配置文件
 DEVICE_INFOS_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceInfos.json")  # 阀门对象的配置文件
@@ -43,47 +43,6 @@ mqtt_client = MQTTClient(broker_ip="192.168.1.15",port=1883,username="admin",pas
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
-# 从设备类型创建动态类，只需执行一次
-class DeviceTypeFactory:
-    """
-    设备类型工厂类，用于生成设备类型类。
-    """
-    _device_classes = {}
-
-    @classmethod
-    def get_device_class(cls, device_type_id):
-        if device_type_id not in cls._device_classes:
-            cls._device_classes[device_type_id] = cls._create_device_class(device_type_id)
-        return cls._device_classes[device_type_id]
-
-    @staticmethod
-    def _create_device_class(device_type_id):
-        device = next((d for d in device_types if d["ID"] == device_type_id), None)
-        if not device:
-            raise ValueError(f"Device with ID {device_type_id} not found in DeviceTypes, device_types: {device_types}")
-
-        attributes = {}
-        for tag in device["Tags"]:
-            def create_property(tag_name, tag_id):
-                private_attr = f"_{tag_name}"
-
-                @property
-                def prop(self):
-                    return getattr(self, private_attr, None)
-
-                @prop.setter
-                def prop(self, value):
-                    setattr(self, private_attr, value)
-                    # 确保实例已经完成初始化并存在于 instance_info_id_map 中
-                    if id(self) in instance_info_id_map:
-                        print(f"正在更新 JSON，tag_name: {tag_name}, real_value: {value}")
-                        device_infos_handler.update_tag_real_value_by_device_info(instance_info_id_map[id(self)], tag_name=tag_name, real_value=value)
-
-                return prop
-
-            attributes[tag["Name"]] = create_property(tag["Name"], tag["ID"])
-
-        return type(device["Name"], (object,), attributes)
 
 # 根据设备信息创建设备实例
 def create_device_instance(device_info, device_class):
@@ -198,7 +157,7 @@ def main():
          # 创建 MQTT 客户端对象
    
     device_type_id = 1  # 假设我们选择 ID 为 1 的设备类型
-    generated_class = DeviceTypeFactory.get_device_class(device_type_id)
+    generated_class = DeviceTypeFactory.get_device_class(device_type_id, device_types, device_infos_handler, instance_info_id_map)
 
     # 创建实例对象，基于 DeviceInfos 中的设备信息
     for device_info in device_infos_handler.data["DeviceInfos"]:
@@ -206,7 +165,7 @@ def main():
             instance = create_device_instance(device_info, generated_class)
             instances.append(instance)
             instance_info_id_map[id(instance)] = device_info["ID"]  # 使用 id(instance) 作为键
-# 定时用MQTT对象发布设备信息
+# 定时用MQTT设备信息
 def mqtt_publish_loop():
     while True:
         mqtt_client.publish_all_devices_info(instances)  # 发布所有设备信息
@@ -223,7 +182,7 @@ def start_threads():
 
     rtu_thread.start()
     gpio_thread.start()
-    mqtt_publish_thread.start()
+    #mqtt_publish_thread.start()
 
 
 if __name__ == "__main__":
@@ -233,7 +192,7 @@ if __name__ == "__main__":
     # 无限循环打印状态信息
     while True:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 优创未来, version V0.1.90! 当前时间是 {current_time}")
+        print(f"Hello, 优创未来, version V0.1.91! 当前时间是 {current_time}")
         for instance in instances:
             print(f"阀门开度：{instance.行程反馈}")
             print(f"阀门给定开度：{instance.行程给定}")

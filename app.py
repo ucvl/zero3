@@ -157,7 +157,7 @@ def main():
     """
     global instances, instance_info_id_map
     device_type_id = 1  # 假设我们选择 ID 为 1 的设备类型
-    generated_class = DeviceTypeFactory.get_device_class(device_type_id, device_types)
+    generated_class = DeviceTypeFactory.get_device_class(device_type_id)
 
     # 创建实例对象，基于 DeviceInfos 中的设备信息
     for device_info in device_infos_handler.data["DeviceInfos"]:
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     try:
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Hello, 优创未来, version V0.2.4! 当前时间是 {current_time}")
+            print(f"Hello, 优创未来, version V0.2.5! 当前时间是 {current_time}")
             for instance in instances:
                 print(f"阀门开度：{instance.行程反馈}")
                 print(f"阀门给定开度：{instance.行程给定}")

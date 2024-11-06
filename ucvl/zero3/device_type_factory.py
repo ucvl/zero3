@@ -16,7 +16,9 @@ class DeviceTypeFactory:
         if not device:
             raise ValueError(f"Device with ID {device_type_id} not found in DeviceTypes, device_types: {device_types}")
 
-        attributes = {}
+        attributes = {
+            'DevTypeID': device_type_id  # 为设备类添加 DevTypeID 属性
+        }
         for tag in device["Tags"]:
             def create_property(tag_name, tag_id):
                 private_attr = f"_{tag_name}"

@@ -183,15 +183,23 @@ if __name__ == "__main__":
     start_threads()
 
     # 启动 MQTT 处理
-    mqtt_handler = MQTTHandler(broker_ip="192.168.1.15", broker_port=1883, username="admin", password="AJB@123456", instances=instances, instance_info_id_map=instance_info_id_map)
+    mqtt_handler = MQTTHandler(
+        broker_ip="192.168.1.15",
+        broker_port=1883,
+        username="admin",
+        password="AJB@123456",
+        instances=instances,
+        instance_info_id_map=instance_info_id_map
+    )
     mqtt_thread = threading.Thread(target=mqtt_handler.start)
     mqtt_thread.daemon = True
     mqtt_thread.start()
 
+    # 无限循环打印状态信息
     try:
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Hello, 优创未来, version V0.2.2! 当前时间是 {current_time}")
+            print(f"Hello, 优创未来, version V0.2.4! 当前时间是 {current_time}")
             for instance in instances:
                 print(f"阀门开度：{instance.行程反馈}")
                 print(f"阀门给定开度：{instance.行程给定}")

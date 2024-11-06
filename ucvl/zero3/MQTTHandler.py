@@ -48,7 +48,8 @@ class MQTTHandler:
                             for attr_name in dir(instance):
                                 attr = getattr(instance, attr_name, None)
                                 if isinstance(attr, dict) and attr.get("ID") == tag_id:
-                                    setattr(instance, attr_name, value)
+                                    attr["实时值"] = value
+                                    setattr(instance, attr_name, attr)
                                     print(f"更新设备 {device_id} 的属性 {attr_name} 为 {value}")
         except Exception as e:
             print(f"处理 MQTT 消息时出错: {e}")
@@ -68,7 +69,7 @@ class MQTTHandler:
                             "Tags": [
                                 {
                                     "ID": attr.get("ID"),
-                                    "V": getattr(instance, attr_name)
+                                    "V": attr.get("实时值")
                                 }
                                 for attr_name in dir(instance)
                                 if isinstance((attr := getattr(instance, attr_name, None)), dict) and "ID" in attr

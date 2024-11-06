@@ -5,6 +5,8 @@ import wiringpi
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
 from ucvl.zero3.json_file import JSONHandler
+from ucvl.zero3.DeviceFactory import DeviceTypeFactory
+from ucvl.zero3.MQTTHandler import MQTTHandler
 
 # 配置文件路径
 DEVICE_TYPES_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "DeviceTypes.json")  # 设备类型的配置文件
@@ -40,46 +42,6 @@ PIN_Q_CONN_UP = 7
 
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
-
-# 从设备类型创建动态类，只需执行一次
-class DeviceTypeFactory:
-    """
-    设备类型工厂类，用于生成设备类型类。
-    """
-    _device_classes = {}
-
-    @classmethod
-    def get_device_class(cls, device_type_id):
-        if device_type_id not in cls._device_classes:
-            cls._device_classes[device_type_id] = cls._create_device_class(device_type_id)
-        return cls._device_classes[device_type_id]
-
-    @staticmethod
-    def _create_device_class(device_type_id):
-        device = next((d for d in device_types if d["ID"] == device_type_id), None)
-        if not device:
-            raise ValueError(f"Device with ID {device_type_id} not found in DeviceTypes, device_types: {device_types}")
-
-        attributes = {}
-        for tag in device["Tags"]:
-            def create_property(tag_name, tag_id):
-                private_attr = f"_{tag_name}"
-
-                @property
-                def prop(self):
-                    return getattr(self, private_attr, None)
-
-                @prop.setter
-                def prop(self, value):
-                    setattr(self, private_attr, value)
-                    print(f"正在更新 JSON，tag_name: {tag_id}, real_value: {value}")
-                    device_infos_handler.update_tag_real_value_by_device_info(instance_info_id_map[id(self)], tag_name=tag_name, real_value=value)
-
-                return prop
-
-            attributes[tag["Name"]] = create_property(tag["Name"], tag["ID"])
-
-        return type(device["Name"], (object,), attributes)
 
 # 根据设备信息创建设备实例
 def create_device_instance(device_info, device_class):
@@ -138,6 +100,7 @@ def rtu_communication():
 
         time.sleep(0.1)
 
+# GPIO 输入监控函数
 def gpio_input_monitor():
     """
     GPIO 输入监控函数，负责检测输入引脚的状态并对设备实例进行相应操作。
@@ -219,11 +182,15 @@ if __name__ == "__main__":
     main()
     start_threads()
 
-    # 无限循环打印状态信息
+    # 启动 MQTT 处理程序
+    mqtt_handler = MQTTHandler(broker_ip="192.168.1.15", broker_port=1883, instances=instances, instance_info_id_map=instance_info_id_map)
+    mqtt_thread = threading.Thread(target=mqtt_handler.start)
+    mqtt_thread.daemon = True
+    mqtt_thread.start()
     try:
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Hello, 优创未来, version V0.1.82! 当前时间是 {current_time}")
+            print(f"Hello, 优创未来, version V0.2.1! 当前时间是 {current_time}")
             for instance in instances:
                 print(f"阀门开度：{instance.行程反馈}")
                 print(f"阀门给定开度：{instance.行程给定}")

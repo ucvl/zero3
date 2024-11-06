@@ -17,30 +17,47 @@ class MQTTClient:
     def on_connect(self, client, userdata, flags, rc):
         print(f"MQTT 连接成功, 状态码 {rc}")
     def on_message(self, client, userdata, msg):
-            """
-            当接收到消息时，处理更新设备的实时值
-            """
-            try:
-                print(f"接收到消息: {msg.topic} -> {msg.payload.decode()}")
-                # 解析消息 payload
-                payload = json.loads(msg.payload.decode())
+        """
+        当接收到消息时，处理更新设备的实时值
+        """
+        try:
+            print(f"接收到消息: {msg.topic} -> {msg.payload.decode()}")
+            # 解析消息 payload
+            payload = json.loads(msg.payload.decode())
 
-                # 从主题中提取设备 ID
-                topic_parts = msg.topic.split('/')
-                device_id = topic_parts[-1]  # 设备 ID 是主题的最后一部分
+            # 从主题中提取设备 ID
+            topic_parts = msg.topic.split('/')
+            device_id = int(topic_parts[-1])  # 设备 ID 是主题的最后一部分
 
-                # 更新对应设备的实时值
+            # 确保 payload 中有 "Devs" 字段
+            if "Devs" not in payload:
+                print("消息中缺少 'Devs' 字段，无法更新设备信息。")
+                return
+
+            # 更新对应设备的实时值
+            for dev in payload["Devs"]:
+                dev_id = dev["ID"]
+                # 查找设备实例
                 for instance in self.instances:
-                    if instance.device_info_id == device_id:  # 根据设备 ID 查找对应设备
-                        for tag in payload["Tags"]:
-                            tag_name = tag["Name"]
-                            # 更新设备实例的对应实时值
-                            if hasattr(instance, tag_name):
-                                setattr(instance, tag_name, tag["V"])
-                                print(f"更新设备 {device_id} 的 {tag_name} 为 {tag['V']}")
+                    if instance.device_info_id == dev_id:  # 根据设备 ID 查找对应设备
+                        for tag in dev["Tags"]:
+                            tag_id = tag["ID"]
+                            tag_value = tag["V"]
+                            
+                            # 获取标签名称，以便更新实例的属性
+                            for device_type in self.device_types:
+                                if device_type["ID"] == instance.DevTypeID:
+                                    tag_name = next((t["Name"] for t in device_type["Tags"] if t["ID"] == tag_id), None)
+                                    if tag_name:
+                                        # 更新设备实例的对应实时值
+                                        setattr(instance, tag_name, tag_value)
+                                        print(f"更新设备 {dev_id} 的 {tag_name} 为 {tag_value}")
+                                    else:
+                                        print(f"在设备类型中找不到 ID 为 {tag_id} 的标签")
                         break
-            except Exception as e:
-                print(f"处理接收到的消息时发生错误: {e}")
+        except Exception as e:
+            print(f"处理接收到的消息时发生错误: {e}")
+
     def get_mqtt_topic(self, device_id):
         """
         根据设备ID生成MQTT主题

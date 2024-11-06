@@ -1,3 +1,4 @@
+import pprint
 import paho.mqtt.client as mqtt
 import json
 import time
@@ -42,6 +43,9 @@ class MQTTClient:
 
                 # 查找设备实例
                 for instance in self.instances:
+                    # 打印设备实例详细信息
+                    print("设备实例内容:")
+                    pprint.pprint(vars(instance))
                     if instance.device_info_id == dev_id:  # 根据设备 ID 查找对应设备
                         print(f"找到设备实例: {instance.device_info_id}")
                         # 遍历设备的所有标签

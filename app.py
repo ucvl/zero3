@@ -162,7 +162,7 @@ def main():
 # 定时用MQTT设备信息
 def mqtt_publish_loop():
     while True:
-        mqtt_client.publish_all_devices_info(instances)  # 发布所有设备信息
+        mqtt_client.publish_all_devices_info(instances,device_types)  # 发布所有设备信息
         time.sleep(5)  # 每 5 秒发送一次
  # 启动线程       
 def start_threads():
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     # 无限循环打印状态信息
     while True:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 优创未来, version V0.1.96! 当前时间是 {current_time}")
+        print(f"Hello, 优创未来, version V0.1.97! 当前时间是 {current_time}")
         for instance in instances:
             print(f"阀门开度：{instance.行程反馈}")
             print(f"阀门给定开度：{instance.行程给定}")

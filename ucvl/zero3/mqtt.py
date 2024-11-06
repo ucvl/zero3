@@ -4,7 +4,7 @@ import json
 import time
 
 class MQTTClient:
-    def __init__(self, broker_ip, port, username, password, device_type_id=1,instances=None,device_types):
+    def __init__(self, broker_ip, port, username, password, device_type_id=1,instances=None,device_types=None):
         self.client = mqtt.Client()
         self.client.username_pw_set(username, password)
         self.client.on_connect = self.on_connect

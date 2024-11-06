@@ -21,6 +21,7 @@ class DeviceTypeFactory:
         attributes = {
             'DevTypeID': device_type_id,  # 添加设备类型 ID
             'device_info_id': None  # 设备信息 ID
+            'Tags': []  # 确保 Tags 属性存在，并初始化为空列表
         }
 
         # 添加设备标签（Tag）对应的属性
@@ -50,6 +51,7 @@ class DeviceTypeFactory:
         # 创建设备实例时，初始化 device_info_id
         def device_instance_init(self, device_info_id):
             self.device_info_id = device_info_id
+            self.Tags = device["Tags"]  # 初始化 Tags 属性
 
         device_class.__init__ = device_instance_init
         return device_class

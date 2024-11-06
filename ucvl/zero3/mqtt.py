@@ -4,7 +4,7 @@ import json
 import time
 
 class MQTTClient:
-    def __init__(self, broker_ip, port, username, password, device_type_id=1,instances=None):
+    def __init__(self, broker_ip, port, username, password, device_type_id=1,instances=None,device_types):
         self.client = mqtt.Client()
         self.client.username_pw_set(username, password)
         self.client.on_connect = self.on_connect
@@ -12,6 +12,7 @@ class MQTTClient:
         self.client.connect(broker_ip, port, 60)
         self.client.loop_start()
         self.device_type_id = device_type_id  # Set the default DeviceTypeID
+        self.device_types=device_types
         self.instances = instances  # 保存设备实例
         # 订阅特定主题
         self.client.subscribe(f"AJB1/unified/{self.device_type_id}/+")
@@ -39,6 +40,10 @@ class MQTTClient:
                     if instance.device_info_id == dev_id:  # 根据设备 ID 查找对应设备实例
                         print(f"找到设备实例: {instance.device_info_id}")
                         pprint.pprint(vars(instance))  # 打印设备实例的所有属性
+
+                        if not hasattr(instance, 'Tags'):
+                            print(f"设备 {dev_id} 的实例没有 Tags 属性，正在初始化。")
+                            instance.Tags = []  # 赋予一个默认值，避免访问时出错
 
                         for tag in dev["Tags"]:
                             tag_id = tag["ID"]

@@ -136,7 +136,7 @@ if __name__ == "__main__":
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with lock:
-                print(f"Hello, 优创未来, version V0.2.6! 当前时间是 {current_time}")
+                print(f"Hello, 优创未来, version V0.2.7! 当前时间是 {current_time}")
                 for instance in instances:
                     print(f"阀门开度：{instance.行程反馈}")
                     print(f"阀门给定开度：{instance.行程给定}")

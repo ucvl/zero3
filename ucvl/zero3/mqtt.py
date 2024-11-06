@@ -41,35 +41,26 @@ class MQTTClient:
                         print(f"找到设备实例: {instance.device_info_id}")
                         pprint.pprint(vars(instance))  # 打印设备实例的所有属性
 
+                        # 检查 Tags 是否为空或 None
+                        if not dev.get("Tags"):  # 或者 `if dev["Tags"] is None or len(dev["Tags"]) == 0:`
+                            print(f"设备 {dev_id} 没有 Tags 数据，跳过更新。")
+                            continue  # 跳过当前设备，处理下一个
+
                         for tag in dev["Tags"]:
                             tag_id = tag["ID"]
                             tag_value = tag["V"]
                             print(f"更新标签 ID: {tag_id}, 新值: {tag_value}")
 
-                            # 查找对应的设备类型标签 Name
-                            device = next((d for d in self.device_types if d["ID"] == instance.DevTypeID), None)
-                            if not device:
-                                print(f"设备类型 {instance.DevTypeID} 不存在！")
-                                continue
-
-                            # 查找该标签 ID 对应的标签名称（Name）
-                            tag_info = next((t for t in device["Tags"] if t["ID"] == tag_id), None)
-                            if tag_info:
-                                tag_name = tag_info["Name"]  # 获取标签的 Name
-
-                                # 将实时值赋给设备实例中的标签实时值属性
-                                if hasattr(instance, tag_name):
-                                    # 确保该标签属性为字典，包含实时值
-                                    if isinstance(getattr(instance, tag_name), dict):
-                                        # 更新实时值字段
-                                        getattr(instance, tag_name)["实时值"] = tag_value
-                                        print(f"设备 {dev_id} 的标签 {tag_name} 实时值已更新为 {tag_value}")
-                                    else:
-                                        print(f"设备实例中的标签属性 {tag_name} 不是字典，无法更新实时值")
-                                else:
-                                    print(f"设备实例中没有属性 {tag_name}，无法更新实时值")
+                            # 查找设备实例中的标签
+                            tag_instance = next((t for t in instance.Tags if t["ID"] == tag_id), None)
+                            if tag_instance:
+                                # 更新实时值
+                                tag_instance["实时值"] = tag_value
+                                print(f"设备 {dev_id} 的标签 {tag_instance['Name']} 实时值已更新为 {tag_value}")
                             else:
-                                print(f"设备类型 {device['Name']} 中没有标签 ID {tag_id}")
+                                print(f"设备实例中没有标签 ID {tag_id}")
+
+
 
         except Exception as e:
             print(f"处理接收到的消息时发生错误: {e}")

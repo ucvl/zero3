@@ -18,13 +18,6 @@ device_infos_handler = JSONHandler(DEVICE_INFOS_FILE_PATH)  # 初始化 DeviceIn
 device_types_handler = JSONHandler(DEVICE_TYPES_FILE_PATH)  # 初始化 DeviceTypes JSONHandler
 device_types_data = device_types_handler.data
 
-# 确保加载的 JSON 数据中存在 "DeviceTypes" 键
-def check_device_types_data():
-    if "DeviceTypes" not in device_types_data:
-        raise KeyError("DeviceTypes 键在 JSON 数据中找不到，请检查 DeviceTypes.json 文件的结构。")
-    print(f"加载的 device_types_data: {device_types_data}")
-
-check_device_types_data()
 device_types = device_types_data["DeviceTypes"]  # 设备类型全局变量，常驻内存
 
 # 初始化全局变量
@@ -52,7 +45,8 @@ def create_device_instance(device_info, device_class):
     :param device_class: 动态生成的设备类
     :return: 设备实例
     """
-    instance = device_class()
+    device_info_id = device_info.get("ID")  # 根据设备信息提取 device_info_id
+    instance = device_class(device_info_id)
     for tag in device_info["Tags"]:
         if hasattr(instance, tag["Name"]):
             # 在初始化阶段禁用自动写入 JSON，以避免在对象未完全初始化时触发写入操作
@@ -192,7 +186,7 @@ if __name__ == "__main__":
     # 无限循环打印状态信息
     while True:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 优创未来, version V0.1.95! 当前时间是 {current_time}")
+        print(f"Hello, 优创未来, version V0.1.96! 当前时间是 {current_time}")
         for instance in instances:
             print(f"阀门开度：{instance.行程反馈}")
             print(f"阀门给定开度：{instance.行程给定}")

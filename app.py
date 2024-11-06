@@ -38,12 +38,8 @@ PIN_I_UP = 13
 PIN_I_DOWN = 16
 PIN_Q_REMOTE = 5
 PIN_Q_CONN_UP = 7
-mqtt_client = MQTTClient(
-        broker_ip="192.168.1.15",  # 设置你的 MQTT 代理 IP
-        port=1883,
-        username="admin",
-        password="AJB@123456"
-)
+# 初始化MQTT对象
+mqtt_client = MQTTClient(broker_ip="192.168.1.15",port=1883,username="admin",password="AJB@123456")
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
@@ -210,7 +206,7 @@ def main():
             instance = create_device_instance(device_info, generated_class)
             instances.append(instance)
             instance_info_id_map[id(instance)] = device_info["ID"]  # 使用 id(instance) 作为键
-# 定时发布设备信息
+# 定时用MQTT对象发布设备信息
 def mqtt_publish_loop():
     while True:
         mqtt_client.publish_all_devices_info(instances)  # 发布所有设备信息
@@ -235,14 +231,12 @@ if __name__ == "__main__":
     start_threads()
 
     # 无限循环打印状态信息
-    try:
-        while True:
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Hello, 优创未来, version V0.1.83! 当前时间是 {current_time}")
-            for instance in instances:
-                print(f"阀门开度：{instance.行程反馈}")
-                print(f"阀门给定开度：{instance.行程给定}")
-                print(f"阀门就地远程状态：{instance.远程}")
-            time.sleep(2)
-    except KeyboardInterrupt:
-        print("程序已手动终止")
+    while True:
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"Hello, 优创未来, version V0.1.90! 当前时间是 {current_time}")
+        for instance in instances:
+            print(f"阀门开度：{instance.行程反馈}")
+            print(f"阀门给定开度：{instance.行程给定}")
+            print(f"阀门就地远程状态：{instance.远程}")
+        time.sleep(2)
+

@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+from ucvl.zero3.mqtt import MQTTClient
 import wiringpi
 from datetime import datetime
 from ucvl.zero3.modbus_rtu import RTU
@@ -37,7 +38,12 @@ PIN_I_UP = 13
 PIN_I_DOWN = 16
 PIN_Q_REMOTE = 5
 PIN_Q_CONN_UP = 7
-
+mqtt_client = MQTTClient(
+        broker_ip="192.168.1.15",  # 设置你的 MQTT 代理 IP
+        port=1883,
+        username="admin",
+        password="AJB@123456"
+)
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 
@@ -192,7 +198,9 @@ def main():
     """
     主函数，负责创建设备类和设备实例。
     """
-    global instances, instance_info_id_map
+    global instances, instance_info_id_map,mqtt_client
+         # 创建 MQTT 客户端对象
+   
     device_type_id = 1  # 假设我们选择 ID 为 1 的设备类型
     generated_class = DeviceTypeFactory.get_device_class(device_type_id)
 
@@ -202,18 +210,25 @@ def main():
             instance = create_device_instance(device_info, generated_class)
             instances.append(instance)
             instance_info_id_map[id(instance)] = device_info["ID"]  # 使用 id(instance) 作为键
-
-# 启动线程
+# 定时发布设备信息
+def mqtt_publish_loop():
+    while True:
+        mqtt_client.publish_all_devices_info(instances)  # 发布所有设备信息
+        time.sleep(5)  # 每 5 秒发送一次
+ # 启动线程       
 def start_threads():
-    """
-    启动 RTU 通信和 GPIO 输入监控线程。
-    """
     rtu_thread = threading.Thread(target=rtu_communication)
     gpio_thread = threading.Thread(target=gpio_input_monitor)
-    rtu_thread.daemon = True  # 确保线程在主程序退出时自动退出
-    gpio_thread.daemon = True  # 确保线程在主程序退出时自动退出
+    mqtt_publish_thread = threading.Thread(target=mqtt_publish_loop)
+
+    rtu_thread.daemon = True
+    gpio_thread.daemon = True
+    mqtt_publish_thread.daemon = True
+
     rtu_thread.start()
     gpio_thread.start()
+    mqtt_publish_thread.start()
+
 
 if __name__ == "__main__":
     main()

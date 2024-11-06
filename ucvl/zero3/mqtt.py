@@ -20,7 +20,7 @@ class MQTTClient:
         self.client.subscribe(f"AJB1/unified/{self.device_type_id}/+")
     def on_connect(self, client, userdata, flags, rc):
         print(f"MQTT 连接成功, 状态码 {rc}")
-        def on_message(self, client, userdata, msg):
+    def on_message(self, client, userdata, msg):
         try:
             print(f"接收到消息: {msg.topic} -> {msg.payload.decode()}")
             payload = json.loads(msg.payload.decode())

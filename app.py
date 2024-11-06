@@ -157,7 +157,7 @@ def main():
     """
     global instances, instance_info_id_map
     device_type_id = 1  # 假设我们选择 ID 为 1 的设备类型
-    generated_class = DeviceTypeFactory.get_device_class(device_type_id)
+    generated_class = DeviceTypeFactory.get_device_class(device_type_id, device_types)
 
     # 创建实例对象，基于 DeviceInfos 中的设备信息
     for device_info in device_infos_handler.data["DeviceInfos"]:
@@ -182,11 +182,12 @@ if __name__ == "__main__":
     main()
     start_threads()
 
-    # 启动 MQTT 处理程序
-    mqtt_handler = MQTTHandler(broker_ip="192.168.1.15", broker_port=1883, instances=instances, instance_info_id_map=instance_info_id_map)
+    # 启动 MQTT 处理
+    mqtt_handler = MQTTHandler(broker_ip="192.168.1.15", broker_port=1883, username="admin", password="AJB@123456", instances=instances, instance_info_id_map=instance_info_id_map)
     mqtt_thread = threading.Thread(target=mqtt_handler.start)
     mqtt_thread.daemon = True
     mqtt_thread.start()
+
     try:
         while True:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

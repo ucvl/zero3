@@ -32,7 +32,7 @@ PIN_I_DOWN = 16
 PIN_Q_REMOTE = 5
 PIN_Q_CONN_UP = 7
 # 初始化MQTT对象
-mqtt_client = MQTTClient(broker_ip="192.168.1.15",port=1883,username="admin",password="AJB@123456")
+mqtt_client = MQTTClient(broker_ip="192.168.1.15",port=1883,username="admin",password="AJB@123456",instances=instances)
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 

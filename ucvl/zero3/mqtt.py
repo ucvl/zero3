@@ -46,11 +46,11 @@ class MQTTClient:
         devices_info = []
         
         for instance in instances:
-            if instance.device_type_id == self.device_type_id:  # 只发布该设备类型的设备
+            if instance.DevTypeID  == self.device_type_id:  # 只发布该设备类型的设备
                 devices_info.append(self.format_device_info(instance))
         
         if devices_info:  # 确保有设备信息才发布
-            topic = f"AJB1/zero3/{self.device_type_id}/all_devices"  # 发布到所有设备的主题
+            topic = f"AJB1/zero3/{self.device_type_id}"  # 发布到所有设备的主题
             payload = {
                 'DeviceTypeID': self.device_type_id,
                 'TS': int(time.time()),  # 获取当前时间戳

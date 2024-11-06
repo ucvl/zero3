@@ -152,7 +152,7 @@ def main():
    
     device_type_id = 1  # 假设我们选择 ID 为 1 的设备类型
     generated_class = DeviceTypeFactory.get_device_class(device_type_id, device_types, device_infos_handler, instance_info_id_map)
-
+    print(generated_class)
     # 创建实例对象，基于 DeviceInfos 中的设备信息
     for device_info in device_infos_handler.data["DeviceInfos"]:
         if device_info["DevTypeID"] == device_type_id:

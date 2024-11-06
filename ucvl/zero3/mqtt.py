@@ -7,9 +7,11 @@ class MQTTClient:
         self.client = mqtt.Client()
         self.client.username_pw_set(username, password)
         self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message  # 确保设置 on_message 回调
         self.client.connect(broker_ip, port, 60)
         self.client.loop_start()
         self.device_type_id = device_type_id  # Set the default DeviceTypeID
+        self.instances = instances  # 保存设备实例
         # 订阅特定主题
         self.client.subscribe(f"AJB1/unified/{self.device_type_id}/+")
     def on_connect(self, client, userdata, flags, rc):

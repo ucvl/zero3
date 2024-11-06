@@ -67,14 +67,13 @@ class MQTTClient:
                                 tag_name = tag_info["Name"]
                                 print(f"找到标签 Name: {tag_name}, 对应标签 ID: {tag_id}")
 
-                                # 查找设备实例中的标签
+                                # 查找设备实例中的标签，更新其实时值
                                 tag_instance = next((t for t in instance.Tags if t["ID"] == tag_id), None)
                                 if tag_instance:
-                                    # 如果标签是 "行程给定"，做增量操作
-                                    if tag_name == "行程给定":
-                                        tag_instance["实时值"] = min(tag_instance["实时值"] + 1, 100)
+                                    # 使用 tag_name 来更新对应的实时值
+                                    if tag_name == "行程给定":  # 假设需要对这个标签做特殊处理
+                                        tag_instance["实时值"] = min(tag_instance["实时值"] + 1, 100)  # 更新行程给定
                                         print(f"设备 {dev_id} 的标签 {tag_name} 实时值已更新为 {tag_instance['实时值']}")
-
                                     else:
                                         # 其他标签直接更新
                                         tag_instance["实时值"] = tag_value
@@ -88,6 +87,7 @@ class MQTTClient:
 
                 else:
                     print(f"未找到设备实例 {dev_id}，跳过更新。")
+
 
         except Exception as e:
             print(f"处理接收到的消息时发生错误: {e}")

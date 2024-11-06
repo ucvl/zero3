@@ -2,7 +2,6 @@ import paho.mqtt.client as mqtt
 import json
 import time
 
-
 class MQTTClient:
     def __init__(self, broker_ip, port, username, password, device_type_id=1):
         self.client = mqtt.Client()
@@ -21,34 +20,38 @@ class MQTTClient:
         """
         return f"AJB1/zero3/{self.device_type_id}/{device_id}"
 
-    def format_device_info(self, instance):
+    def format_device_info(self, instance, device_types):
         """
         格式化设备信息为需要发布的数据格式
         """
+        device = next((d for d in device_types if d["ID"] == instance.DevTypeID), None)
+        if not device:
+            raise ValueError(f"Device with ID {instance.DevTypeID} not found in device_types.")
+
         tags = [
             {
-                'ID': tag_id,
-                'V': getattr(instance, tag_name)
+                'ID': tag["ID"],
+                'V': getattr(instance, tag["Name"], None)
             }
-            for tag_id, tag_name in enumerate(instance.__dict__, start=1) if not tag_name.startswith('_')
+            for tag in device["Tags"]
         ]
-        
+
         return {
             'ID': instance.device_info_id,
             'Tags': tags
         }
 
-    def publish_all_devices_info(self, instances):
+    def publish_all_devices_info(self, instances, device_types):
         """
         发布指定类型设备的状态信息
         """
         # 只发布当前设备类型的所有设备信息
         devices_info = []
-        
+
         for instance in instances:
-            if instance.DevTypeID  == self.device_type_id:  # 只发布该设备类型的设备
-                devices_info.append(self.format_device_info(instance))
-        
+            if instance.DevTypeID == self.device_type_id:  # 只发布该设备类型的设备
+                devices_info.append(self.format_device_info(instance, device_types))
+
         if devices_info:  # 确保有设备信息才发布
             topic = f"AJB1/zero3/{self.device_type_id}"  # 发布到所有设备的主题
             payload = {
@@ -59,4 +62,3 @@ class MQTTClient:
 
             self.client.publish(topic, json.dumps(payload))
             print(f"发布到 {topic}: {json.dumps(payload)}")
-

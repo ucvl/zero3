@@ -36,25 +36,26 @@ class MQTTClient:
 
                 # 查找设备实例
                 for instance in self.instances:
-                    if instance.device_info_id == dev_id:  # 根据设备 ID 查找对应设备
+                    if instance.device_info_id == dev_id:  # 根据设备 ID 查找对应设备实例
                         print(f"找到设备实例: {instance.device_info_id}")
                         pprint.pprint(vars(instance))  # 打印设备实例的所有属性
-                        
+
                         for tag in dev["Tags"]:
                             tag_id = tag["ID"]
                             tag_value = tag["V"]
                             print(f"更新标签 ID: {tag_id}, 新值: {tag_value}")
 
-                            # 根据 tag_id 找到对应的 Name
-                            tag_name = next((t["Name"] for t in instance.Tags if t["ID"] == tag_id), None)
-                            if tag_name:
-                                # 用 tag_name 更新设备实例的实时值
-                                setattr(instance, tag_name, tag_value)  # 更新实时值
-                                print(f"设备 {dev_id} 的标签 {tag_name} 实时值已更新为 {tag_value}")
+                            # 查找设备实例中的标签
+                            tag_instance = next((t for t in instance.Tags if t["ID"] == tag_id), None)
+                            if tag_instance:
+                                # 更新实时值
+                                tag_instance["实时值"] = tag_value
+                                print(f"设备 {dev_id} 的标签 {tag_instance['Name']} 实时值已更新为 {tag_value}")
                             else:
                                 print(f"设备实例中没有标签 ID {tag_id}")
         except Exception as e:
             print(f"处理接收到的消息时发生错误: {e}")
+
 
 
     def get_mqtt_topic(self, device_id):

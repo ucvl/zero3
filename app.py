@@ -51,10 +51,9 @@ def create_device_instance(device_info, device_class):
         if tag_id in instance.Tags:  # 检查标签是否存在于实例的 Tags 字典中
 
             tag_data = instance.Tags[tag_id]  # 获取标签的数据
-
-            # 设置标签值，优先使用实时值，若实时值为 0，则使用起始值
-            tag_data["实时值"] = tag_data["实时值"] if tag_data["实时值"] != 0 else tag_data["起始值"]
-
+            # 设置标签值，优先使用实时值，若实时值为 0，则使用起始值 
+            initial_value = tag["实时值"] if tag["实时值"] != 0 else tag["起始值"] 
+            tag_data["实时值"]=initial_value
 
     return instance
 
@@ -72,8 +71,7 @@ def rtu_communication():
             if result:
                 a = (result[0] / 10000.0) * 100
                 for instance in instances:
-                    if hasattr(instance, '行程反馈'):
-                        instance.行程反馈 = a
+                    instance.Tags[1000]["实时值"] = a
             else:
                 print("读取失败")
         except Exception as e:

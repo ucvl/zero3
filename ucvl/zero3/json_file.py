@@ -52,11 +52,24 @@ class JSONHandler:
         :param tag_name: 需要更新的标签名
         :param real_value: 要更新的实时值
         """
+        #print(f"准备更新设备信息 ID: {device_info_id}, 标签: {tag_name}, 实时值: {real_value}")
+        found_device_info = False
         for device_info in self.data.get("DeviceInfos", []):
             if device_info["ID"] == device_info_id:
+                found_device_info = True
+                #print(f"找到设备信息: {device_info}")  # 打印找到的设备信息
+                found_tag = False
                 for tag in device_info.get("Tags", []):
-                    if tag["Name"] == tag_name:
+                    if tag["ID"] == tag_name:
+                        found_tag = True
+                        print(f"找到标签: {tag}")  # 打印找到的标签
                         tag["实时值"] = real_value
                         self.save_json()
                         return
+                if not found_tag:
+                    print(f"未找到标签名: {tag_name}，当前设备信息中的标签为: {device_info.get('Tags', [])}")
+        if not found_device_info:
+            print(f"未找到设备信息 ID: {device_info_id}")
         raise ValueError(f"未找到设备信息 ID 为 {device_info_id} 且标签名为 {tag_name} 的条目")
+
+

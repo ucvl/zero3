@@ -25,7 +25,7 @@ PIN_Q_CONN_UP = 7
 
 instances = []  # 用于保存所有实例化的设备对象
 
-previous_b = 0  # 用于记录上一次的 instance.行程给定 值
+previous_b = 0  # 用于记录上一次的 instance.Tags[2000]["实时值"] 值
 
 device_types = JSONHandler(DEVICE_TYPES_FILE_PATH).data["DeviceTypes"]  # 拿到设备类DeviceTypes 的集合
 
@@ -38,21 +38,26 @@ rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stop
 
 
 
-# 根据设备信息创建设备实例
+# 根据设备信息创建设备实例,用device_info初始化device_class创建 的新设备
 def create_device_instance(device_info, device_class):
-    """
-    根据设备信息创建设备实例。
-    :param device_info: 设备信息字典
-    :param device_class: 动态生成的设备类
-    :return: 设备实例
-    """
-    device_info_id = device_info.get("ID")  # 根据设备信息提取 device_info_id
-    instance = device_class(device_info_id)
+
+    instance = device_class(device_info.get("ID"))
+
+    # 遍历设备信息中的标签，并为实例设置相应的值
     for tag in device_info["Tags"]:
-        if hasattr(instance, tag["Name"]):
-            # 在初始化阶段禁用自动写入 JSON，以避免在对象未完全初始化时触发写入操作
-            setattr(instance, tag["Name"], tag["实时值"] if tag["实时值"] != 0 else tag["起始值"])
+
+        tag_id = tag["ID"]  # 获取标签的 ID
+
+        if tag_id in instance.Tags:  # 检查标签是否存在于实例的 Tags 字典中
+
+            tag_data = instance.Tags[tag_id]  # 获取标签的数据
+
+            # 设置标签值，优先使用实时值，若实时值为 0，则使用起始值
+            tag_data["实时值"] = tag_data["实时值"] if tag_data["实时值"] != 0 else tag_data["起始值"]
+
+
     return instance
+
 
 # RTU 通信函数
 def rtu_communication():
@@ -77,14 +82,14 @@ def rtu_communication():
         time.sleep(0.1)
 
         for instance in instances:
-            # 只有在 instance.行程给定 值发生变化时才进行写入操作
-            if instance.行程给定 != previous_b:
+            # 只有在 instance.Tags[2000]["实时值"] 值发生变化时才进行写入操作
+            if instance.Tags[2000]["实时值"] != previous_b:
                 try:
-                    converted_b = int((instance.行程给定 / 100.0) * 10000)
+                    converted_b = int((instance.Tags[2000]["实时值"] / 100.0) * 10000)
                     for attempt in range(3):
                         success = rtu_resource.write_holding_registers(SlaveAddress=1, Data=[converted_b], DataAddress=80, DataCount=1)
                         if success:
-                            previous_b = instance.行程给定  # 更新 previous_b
+                            previous_b = instance.Tags[2000]["实时值"]  # 更新 previous_b
                             break
                         else:
                             print(f"写入失败，尝试 {attempt + 1}/3")
@@ -117,26 +122,26 @@ def gpio_input_monitor():
     try:
         while True:
             for instance in instances:
-                if hasattr(instance, '远程') and instance.远程 == 0:
+                if instance.Tags[3000]["实时值"] == 0:
                     current_state_up = wiringpi.digitalRead(PIN_I_UP)
                     current_state_down = wiringpi.digitalRead(PIN_I_DOWN)
 
-                    # 检测上升沿并直接操作 instance.行程给定 的值
+                    # 检测上升沿并直接操作 instance.Tags[2000]["实时值"] 的值
                     if current_state_up == 1 and last_state_up == 0:
-                        instance.行程给定 = min(instance.行程给定 + 1, 100)
+                        instance.Tags[2000]["实时值"] = min(instance.Tags[2000]["实时值"] + 1, 100)
 
                     if current_state_down == 1 and last_state_down == 0:
-                        instance.行程给定 = max(instance.行程给定 - 1, 0)
+                        instance.Tags[2000]["实时值"] = max(instance.Tags[2000]["实时值"] - 1, 0)
 
                     last_state_up, last_state_down = current_state_up, current_state_down
 
             # 检测 instance 的实时值并在引脚上输出
             for instance in instances:
-                if hasattr(instance, '远程'):
-                    wiringpi.digitalWrite(PIN_Q_REMOTE, 1 if instance.远程 == 1 else 0)
+               
+                    wiringpi.digitalWrite(PIN_Q_REMOTE, 1 if instance.Tags[3000]["实时值"] == 1 else 0)
 
-                if hasattr(instance, 'ER'):
-                    er_value = instance.ER
+               
+                    er_value = instance.Tags[7000]["实时值"]
                     wiringpi.digitalWrite(PIN_Q_CONN_UP, 0 if er_value & 1 else 1)  # 检查第0位是否为1
 
             time.sleep(0.2)
@@ -156,15 +161,8 @@ def main():
     device_type_id = 1  # 假设我们选择 ID 为 1 的设备类型
 
 
-
-
-
     #根据Json文件创建设备类，需要的参数是：哪种类型，
     generated_class = DeviceTypeFactory.get_device_class(device_type_id, device_types)
-
-
-
-
 
 
     # 创建实例对象，基于 DeviceInfos 中的设备信息
@@ -203,7 +201,7 @@ if __name__ == "__main__":
         print(f"Hello, 优创未来, version V0.1.103! 当前时间是 {current_time}")
         for instance in instances:
             print(f"阀门开度：{instance.行程反馈}")
-            print(f"阀门给定开度：{instance.行程给定}")
+            print(f"阀门给定开度：{instance.Tags[2000]["实时值"]}")
             print(f"阀门就地远程状态：{instance.远程}")
         time.sleep(2)
 

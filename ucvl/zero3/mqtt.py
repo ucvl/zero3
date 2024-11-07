@@ -96,7 +96,7 @@ class MQTTClient:
         devices_info = []
 
         for instance in self.instances:
-            if instance.device_type["ID"] == device_type_id:
+            if instance.DevTypeID == device_type_id:
                 devices_info.append(self.format_device_info(instance))
 
         if devices_info:  # 确保有设备信息才发布

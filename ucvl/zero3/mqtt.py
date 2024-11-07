@@ -81,7 +81,7 @@ class MQTTClient:
                 'ID': tag["ID"],
                 'V': getattr(instance, tag["Name"], None)
             }
-            for tag in instance.device_type["Tags"]  # 假设 instance 中包含 device_type
+            for tag in instance["Tags"]  # 假设 instance 中包含 device_type
         ]
 
         return {

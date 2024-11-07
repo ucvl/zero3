@@ -18,6 +18,7 @@ class DeviceTypeFactory:
         attributes = {
             'ID': device_type_id,
             'Name': device["Name"],
+            'DevTypeID':device_type_id,
             '版本': device["版本"],
             'Tags': {},  # 用于存储标签的字典
             'device_infos_handler': json_handler

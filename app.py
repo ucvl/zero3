@@ -200,8 +200,8 @@ if __name__ == "__main__":
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"Hello, 优创未来, version V0.1.103! 当前时间是 {current_time}")
         for instance in instances:
-            print(f"阀门开度：{instance.行程反馈}")
+            print(f"阀门开度：{instance.Tags[1000]["实时值"]}")
             print(f"阀门给定开度：{instance.Tags[2000]["实时值"]}")
-            print(f"阀门就地远程状态：{instance.远程}")
+            print(f"阀门就地远程状态：{instance.Tags[3000]["实时值"]}")
         time.sleep(2)
 

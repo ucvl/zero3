@@ -128,3 +128,11 @@ class MQTTClient:
     def stop_publish_loop(self):
         """停止定时发布循环"""
         self.publish_thread_stop = True
+    def subscribe_device_type(self, device_type_id):
+                """
+                根据设备类型 ID 订阅相应的 MQTT 主题。
+                :param device_type_id: 设备类型 ID
+                """
+                topic = f"AJB1/unified/{device_type_id}/+"  # 订阅指定设备类型的所有设备主题
+                self.client.subscribe(topic)
+                print(f"已订阅主题: {topic}")

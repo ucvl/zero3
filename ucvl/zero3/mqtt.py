@@ -73,18 +73,27 @@ class MQTTClient:
         """
         格式化设备信息为需要发布的数据格式
         """
-        tags = [
-            {
-                'ID': tag["ID"],
-                'V': getattr(instance, tag["Name"], None)
-            }
-            for tag in instance["Tags"]  # 假设 instance 中包含 device_type
-        ]
+        tags = []
+
+        for tag_id, tag_data in instance.Tags.items():  # 遍历 Tags 字典
+            if isinstance(tag_data, dict):  # 确保 tag_data 是字典
+                real_value = tag_data.get("实时值")  # 获取实时值
+
+                if real_value is not None:
+                    tags.append({
+                        'ID': tag_id,  # 使用 tag_id 作为标签的 ID
+                        'V': real_value  # 使用实时值
+                    })
+                else:
+                    print(f"警告: 标签 {tag_id} 没有实时值，跳过该标签。")
+            else:
+                print(f"警告: 标签 {tag_id} 的数据格式不正确，跳过该标签。")
 
         return {
-            'ID': instance.ID,  # 直接使用 instance.ID
+            'DevID': instance.ID,  # 直接使用 instance.ID
             'Tags': tags
         }
+
 
     def publish_all_devices_info(self, device_type_id):
         """

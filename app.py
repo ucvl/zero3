@@ -162,7 +162,7 @@ def main():
 
 
     #根据Json文件创建设备类，需要的参数是：哪种类型，
-    generated_class = DeviceTypeFactory.get_device_class(device_type_id, device_types)
+    generated_class = DeviceTypeFactory.get_device_class(device_type_id, device_types,device_infos_handler)
 
 
     # 创建实例对象，基于 DeviceInfos 中的设备信息

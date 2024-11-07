@@ -171,9 +171,9 @@ def main():
            
 
 
-    #mqtt_client.start_publish_loop(device_type_id=1, interval=5)  # 每 5 秒发布设备类型为 1 的设备信息
+    mqtt_client.start_publish_loop(device_type_id=1, interval=5)  # 每 5 秒发布设备类型为 1 的设备信息
      # 在主程序中显式订阅设备类型 1 的主题
-    #mqtt_client.subscribe_device_type(device_type_id=1)
+    mqtt_client.subscribe_device_type(device_type_id=1)
  # 启动线程
 def start_threads():
     rtu_thread = threading.Thread(target=rtu_communication)

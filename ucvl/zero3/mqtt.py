@@ -1,4 +1,3 @@
-import pprint
 import threading
 import paho.mqtt.client as mqtt
 import json
@@ -36,8 +35,9 @@ class MQTTClient:
                 print(f"正在处理设备 ID: {dev_id}")
                 instance = self.get_device_instance_by_id(dev_id)
                 if instance:
-                    print(f"找到设备实例: {instance.device_info_id}")
+                    print(f"找到设备实例: {instance}")
 
+                   
                     # 更新设备的标签（Tags）
                     if "Tags" in dev:
                         for tag in dev["Tags"]:
@@ -45,16 +45,13 @@ class MQTTClient:
                             real_value = tag.get("V")  # 这里使用 V 表示标签的实时值
 
                             if tag_id is not None and real_value is not None:
-                                # 使用 tag_metadata 来找到属性名称
-                                tag_name = next((name for name, metadata in instance.tag_metadata.items() if metadata["ID"] == tag_id), None)
-
-                                if tag_name:
-                                    print(f"更新标签 '{tag_name}' 的实时值为 {real_value}")
-                                    setattr(instance, tag_name, real_value)  # 动态更新标签的实时值
+                                # 直接通过 tag_id 更新 Tags 字典中的 '实时值'
+                                if tag_id in instance.Tags:
+                                    print(f"更新标签 ID {tag_id} 的实时值为 {real_value}")
+                                    instance.Tags[tag_id]['实时值'] = real_value  # 直接更新标签的实时值
                                 else:
                                     print(f"未找到标签 ID {tag_id}，跳过该标签更新。")
-                            else:
-                                print(f"标签 {tag_id} 没有实时值，跳过该标签更新。")
+                        
                 else:
                     print(f"未找到设备实例 {dev_id}，跳过更新。")
 

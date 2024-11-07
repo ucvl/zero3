@@ -26,6 +26,7 @@ class MQTTClient:
                 print("消息中缺少 'Devs' 字段，无法更新设备信息。")
                 return
 
+            # 遍历所有设备
             for dev in payload["Devs"]:
                 dev_id = dev.get("ID")
                 if dev_id is None:
@@ -35,21 +36,21 @@ class MQTTClient:
                 print(f"正在处理设备 ID: {dev_id}")
                 instance = self.get_device_instance_by_id(dev_id)
                 if instance:
-                    print(f"找到设备实例: {instance.ID}")
-                    pprint.pprint(vars(instance))
-
-                    # 更新设备的实时值
+                    print(f"找到设备实例: {instance.device_info_id}")
+                    
+                    # 更新设备的标签（Tags）
                     if "Tags" in dev:
                         for tag in dev["Tags"]:
                             tag_id = tag.get("ID")
-                            real_value = tag.get("实时值")
+                            real_value = tag.get("V")  # 这里使用 V 表示标签的实时值
+                            
                             if tag_id is not None and real_value is not None:
-                                # 查找标签 ID 对应的标签
-                                instance_tag = next((t for t in instance.device_type["Tags"] if t["ID"] == tag_id), None)
+                                # 通过设备实例和标签 ID 来更新实时值
+                                instance_tag = next((t for t in instance.__dict__.values() if isinstance(t, property) and t.ID == tag_id), None)
+                                
                                 if instance_tag:
-                                    print(f"更新标签 {tag_id} 的实时值为 {real_value}")
-                                    # 假设每个标签都有一个实时值属性
-                                    instance_tag["实时值"] = real_value
+                                    print(f"更新标签 {instance_tag.ID} 的实时值为 {real_value}")
+                                    setattr(instance, instance_tag.fget.__name__, real_value)  # 使用属性的名字来更新值
                                 else:
                                     print(f"未找到标签 ID {tag_id}，跳过该标签更新。")
                             else:
@@ -61,6 +62,7 @@ class MQTTClient:
             print(f"接收到的消息不是有效的 JSON 格式: {msg.payload.decode()}")
         except Exception as e:
             print(f"处理接收到的消息时发生错误: {e}")
+
         
     def get_device_instance_by_id(self, dev_id):
         """

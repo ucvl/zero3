@@ -30,7 +30,7 @@ previous_b = 0  # 用于记录上一次的 instance.Tags[2000]["实时值"] 值
 device_types = JSONHandler(DEVICE_TYPES_FILE_PATH).data["DeviceTypes"]  # 拿到设备类DeviceTypes 的集合
 
 # 初始化MQTT对象
-#mqtt_client = MQTTClient(broker_ip="192.168.1.15",port=1883,username="admin",password="AJB@123456",instances=instances)
+mqtt_client = MQTTClient(broker_ip="192.168.1.15",port=1883,username="admin",password="AJB@123456",instances=instances)
 # 初始化 RTU 资源
 rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stopbits=1, bytesize=8)
 

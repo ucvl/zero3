@@ -37,20 +37,20 @@ class MQTTClient:
                 instance = self.get_device_instance_by_id(dev_id)
                 if instance:
                     print(f"找到设备实例: {instance.device_info_id}")
-                    
+
                     # 更新设备的标签（Tags）
                     if "Tags" in dev:
                         for tag in dev["Tags"]:
                             tag_id = tag.get("ID")
                             real_value = tag.get("V")  # 这里使用 V 表示标签的实时值
-                            
+
                             if tag_id is not None and real_value is not None:
-                                # 通过设备实例和标签 ID 来更新实时值
-                                instance_tag = next((t for t in instance.__dict__.values() if isinstance(t, property) and t.ID == tag_id), None)
-                                
-                                if instance_tag:
-                                    print(f"更新标签 {instance_tag.ID} 的实时值为 {real_value}")
-                                    setattr(instance, instance_tag.fget.__name__, real_value)  # 使用属性的名字来更新值
+                                # 使用 tag_metadata 来找到属性名称
+                                tag_name = next((name for name, metadata in instance.tag_metadata.items() if metadata["ID"] == tag_id), None)
+
+                                if tag_name:
+                                    print(f"更新标签 '{tag_name}' 的实时值为 {real_value}")
+                                    setattr(instance, tag_name, real_value)  # 动态更新标签的实时值
                                 else:
                                     print(f"未找到标签 ID {tag_id}，跳过该标签更新。")
                             else:
@@ -62,8 +62,7 @@ class MQTTClient:
             print(f"接收到的消息不是有效的 JSON 格式: {msg.payload.decode()}")
         except Exception as e:
             print(f"处理接收到的消息时发生错误: {e}")
-
-        
+ 
     def get_device_instance_by_id(self, dev_id):
         """
         根据设备 ID 获取对应的设备实例

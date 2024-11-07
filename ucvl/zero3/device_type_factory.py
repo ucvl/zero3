@@ -20,12 +20,20 @@ class DeviceTypeFactory:
         # 定义设备类属性
         attributes = {
             'DevTypeID': device_type_id,  # 添加设备类型 ID
-            'device_info_id': None  # 设备信息 ID
+            'device_info_id': None,  # 设备信息 ID
+            'tag_metadata': {}  # 用于存储标签的元数据（ID、名称等）
         }
 
         # 添加设备标签（Tag）对应的属性
         for tag in device["Tags"]:
-            def create_property(tag_name,tag_id):
+            tag_name = tag["Name"]
+            tag_id = tag["ID"]
+
+            # 将标签元数据存入 tag_metadata 字典
+            attributes['tag_metadata'][tag_name] = {"ID": tag_id}
+
+            # 创建属性并添加到类的 attributes 中
+            def create_property(tag_name):
                 private_attr = f"_{tag_name}"
 
                 @property
@@ -35,14 +43,14 @@ class DeviceTypeFactory:
                 @prop.setter
                 def prop(self, value):
                     setattr(self, private_attr, value)
-                prop.ID = tag_id  # 将标签的 ID 作为属性的一部分，方便访问
+
                 return prop
 
-            attributes[tag["Name"]] = create_property(tag["Name"], tag["ID"])
+            attributes[tag_name] = create_property(tag_name)
 
         # 创建设备类，并返回该类
         device_class = type(device["Name"], (object,), attributes)
-        
+
         # 初始化方法
         def device_instance_init(self, device_info_id):
             self.device_info_id = device_info_id

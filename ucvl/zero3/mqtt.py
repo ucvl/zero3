@@ -1,104 +1,129 @@
 import pprint
+import threading
 import paho.mqtt.client as mqtt
 import json
 import time
-
 class MQTTClient:
-    def __init__(self, broker_ip, port, username, password, device_type_id=1,instances=None,device_types=None,instance_info_id_map=None):
+    def __init__(self, broker_ip, port, username, password, instances=None):
         self.client = mqtt.Client()
         self.client.username_pw_set(username, password)
         self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message  # 确保设置 on_message 回调
+        self.client.on_message = self.on_message
         self.client.connect(broker_ip, port, 60)
         self.client.loop_start()
-        self.device_type_id = device_type_id  # Set the default DeviceTypeID
-        self.device_types=device_types
         self.instances = instances  # 保存设备实例
-        self.instance_info_id_map = instance_info_id_map
-        
-        # 订阅特定主题
-        self.client.subscribe(f"AJB1/unified/{self.device_type_id}/+")
+        self.publish_thread_stop = False
+
     def on_connect(self, client, userdata, flags, rc):
         print(f"MQTT 连接成功, 状态码 {rc}")
+        
     def on_message(self, client, userdata, msg):
         try:
             print(f"接收到消息: {msg.topic} -> {msg.payload.decode()}")
             payload = json.loads(msg.payload.decode())
-
-            topic_parts = msg.topic.split('/')
-            device_id = int(topic_parts[-1])
-            print(f"提取的设备 ID: {device_id}")
 
             if "Devs" not in payload:
                 print("消息中缺少 'Devs' 字段，无法更新设备信息。")
                 return
 
             for dev in payload["Devs"]:
-                dev_id = dev["ID"]
+                dev_id = dev.get("ID")
+                if dev_id is None:
+                    print("设备 ID 不存在，跳过该设备")
+                    continue
+
                 print(f"正在处理设备 ID: {dev_id}")
+                instance = self.get_device_instance_by_id(dev_id)
+                if instance:
+                    print(f"找到设备实例: {instance.ID}")
+                    pprint.pprint(vars(instance))
 
-                # 打印实例信息来调试
-                print(f"当前实例列表: {[instance.device_info_id for instance in self.instances]}")
-
-                # 使用映射关系查找设备实例
-                instance = self.instance_info_id_map.get(dev_id)
-                if instance:  # 如果找到对应的设备实例
-                    print(f"找到设备实例: {instance.device_info_id}")
-                    pprint.pprint(vars(instance))  # 打印设备实例的所有属性
-                    # 进一步的处理...
+                    # 更新设备的实时值
+                    if "Tags" in dev:
+                        for tag in dev["Tags"]:
+                            tag_id = tag.get("ID")
+                            real_value = tag.get("实时值")
+                            if tag_id is not None and real_value is not None:
+                                # 查找标签 ID 对应的标签
+                                instance_tag = next((t for t in instance.device_type["Tags"] if t["ID"] == tag_id), None)
+                                if instance_tag:
+                                    print(f"更新标签 {tag_id} 的实时值为 {real_value}")
+                                    # 假设每个标签都有一个实时值属性
+                                    instance_tag["实时值"] = real_value
+                                else:
+                                    print(f"未找到标签 ID {tag_id}，跳过该标签更新。")
+                            else:
+                                print(f"标签 {tag_id} 没有实时值，跳过该标签更新。")
                 else:
                     print(f"未找到设备实例 {dev_id}，跳过更新。")
 
-
+        except json.JSONDecodeError:
+            print(f"接收到的消息不是有效的 JSON 格式: {msg.payload.decode()}")
         except Exception as e:
             print(f"处理接收到的消息时发生错误: {e}")
-
-
-    def get_mqtt_topic(self, device_id):
+        
+    def get_device_instance_by_id(self, dev_id):
         """
-        根据设备ID生成MQTT主题
+        根据设备 ID 获取对应的设备实例
         """
-        return f"AJB1/zero3/{self.device_type_id}/{device_id}"
+        for instance in self.instances:
+            if instance.ID == dev_id:  # 直接通过 instance.ID 访问 ID
+                return instance
+        return None
 
-    def format_device_info(self, instance, device_types):
+    def format_device_info(self, instance):
         """
         格式化设备信息为需要发布的数据格式
         """
-        device = next((d for d in device_types if d["ID"] == instance.DevTypeID), None)
-        if not device:
-            raise ValueError(f"Device with ID {instance.DevTypeID} not found in device_types.")
-
         tags = [
             {
                 'ID': tag["ID"],
                 'V': getattr(instance, tag["Name"], None)
             }
-            for tag in device["Tags"]
+            for tag in instance.device_type["Tags"]  # 假设 instance 中包含 device_type
         ]
 
         return {
-            'ID': instance.device_info_id,
+            'ID': instance.ID,  # 直接使用 instance.ID
             'Tags': tags
         }
 
-    def publish_all_devices_info(self, instances, device_types):
+    def publish_all_devices_info(self, device_type_id):
         """
         发布指定类型设备的状态信息
         """
-        # 只发布当前设备类型的所有设备信息
         devices_info = []
 
-        for instance in instances:
-            if instance.DevTypeID == self.device_type_id:  # 只发布该设备类型的设备
-                devices_info.append(self.format_device_info(instance, device_types))
+        for instance in self.instances:
+            if instance.device_type["ID"] == device_type_id:
+                devices_info.append(self.format_device_info(instance))
 
         if devices_info:  # 确保有设备信息才发布
-            topic = f"AJB1/zero3/{self.device_type_id}"  # 发布到所有设备的主题
+            topic = f"AJB1/zero3/{device_type_id}"
             payload = {
-                'DeviceTypeID': self.device_type_id,
-                'TS': int(time.time()),  # 获取当前时间戳
-                'Devs': devices_info  # 所有设备信息放入 Devs 数组
+                'DeviceTypeID': device_type_id,
+                'TS': int(time.time()),
+                'Devs': devices_info
             }
 
             self.client.publish(topic, json.dumps(payload))
             print(f"发布到 {topic}: {json.dumps(payload)}")
+
+    def start_publish_loop(self, device_type_id, interval=5):
+        """
+        启动定时发布设备信息的循环。
+        :param interval: 定时发布的间隔时间，默认为 5 秒
+        """
+        def loop():
+            while not self.publish_thread_stop:
+                self.publish_all_devices_info(device_type_id)
+                time.sleep(interval)
+
+        # 启动定时发布的线程
+        publish_thread = threading.Thread(target=loop)
+        publish_thread.daemon = True
+        publish_thread.start()
+
+    def stop_publish_loop(self):
+        """停止定时发布循环"""
+        self.publish_thread_stop = True

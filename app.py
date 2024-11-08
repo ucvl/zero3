@@ -42,7 +42,7 @@ rtu_resource = RTU(port='/dev/ttyS5', baudrate=9600, timeout=1, parity='N', stop
 def create_device_instance(device_info, device_class):
 
     instance = device_class(device_info.get("ID"))
-
+    instance.ID=device_info.get("ID")
     # 遍历设备信息中的标签，并为实例设置相应的值
     for tag in device_info["Tags"]:
 
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     # 无限循环打印状态信息
     while True:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 【优创未来】, version V0.2.2! 当前时间是 {current_time}")
+        print(f"Hello, 【优创未来】, version V0.2.3! 当前时间是 {current_time}")
         
         for instance in instances:
             print(f"阀门开度：{instance.Tags[1000]['实时值']}")

@@ -170,10 +170,14 @@ def main():
             instances.append(instance)
            
 
-
-    mqtt_client.start_publish_loop(device_type_id=1, interval=5)  # 每 5 秒发布设备类型为 1 的设备信息
-     # 在主程序中显式订阅设备类型 1 的主题
-    mqtt_client.subscribe_device_type(device_type_id=1)
+    #等待连接成功
+    while not mqtt_client.client.is_connected():
+        print("等待连接成功...")
+        mqtt_client.start_publish_loop(device_type_id=1, interval=5)  # 每 5 秒发布设备类型为 1 的设备信息
+        # 在主程序中显式订阅设备类型 1 的主题
+        mqtt_client.subscribe_device_type(device_type_id=1)
+        time.sleep(5)  # 每5秒检查一次连接状态
+   
  # 启动线程
 def start_threads():
     rtu_thread = threading.Thread(target=rtu_communication)

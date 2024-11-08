@@ -2,20 +2,35 @@ import threading
 import paho.mqtt.client as mqtt
 import json
 import time
+
 class MQTTClient:
     def __init__(self, broker_ip, port, username, password, instances=None):
         self.client = mqtt.Client()
         self.client.username_pw_set(username, password)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        self.client.connect(broker_ip, port, 60)
-        self.client.loop_start()
         self.instances = instances  # 保存设备实例
         self.publish_thread_stop = False
+        
+        # 连接到 MQTT 服务器并重试直到连接成功
+        self.connect_mqtt(broker_ip, port)
+
+    def connect_mqtt(self, broker_ip, port):
+        """连接到 MQTT 服务器，如果连接失败，则每 1 分钟重试一次，直到成功"""
+        while True:
+            try:
+                print("尝试连接到 MQTT 服务器...")
+                self.client.connect(broker_ip, port, 60)
+                self.client.loop_start()
+                print("连接成功！")
+                break  # 连接成功跳出循环
+            except Exception as e:
+                print(f"连接失败: {e}, 等待 1 分钟后重试...")
+                time.sleep(60)  # 等待 60 秒后重试
 
     def on_connect(self, client, userdata, flags, rc):
         print(f"MQTT 连接成功, 状态码 {rc}")
-        
+
     def on_message(self, client, userdata, msg):
         try:
             print(f"接收到消息: {msg.topic} -> {msg.payload.decode()}")
@@ -37,7 +52,6 @@ class MQTTClient:
                 if instance:
                     print(f"找到设备实例: {instance}")
 
-                   
                     # 更新设备的标签（Tags）
                     if "Tags" in dev:
                         for tag in dev["Tags"]:
@@ -51,7 +65,7 @@ class MQTTClient:
                                     instance.Tags[tag_id]['实时值'] = real_value  # 直接更新标签的实时值
                                 else:
                                     print(f"未找到标签 ID {tag_id}，跳过该标签更新。")
-                        
+
                 else:
                     print(f"未找到设备实例 {dev_id}，跳过更新。")
 
@@ -59,7 +73,7 @@ class MQTTClient:
             print(f"接收到的消息不是有效的 JSON 格式: {msg.payload.decode()}")
         except Exception as e:
             print(f"处理接收到的消息时发生错误: {e}")
- 
+
     def get_device_instance_by_id(self, dev_id):
         """
         根据设备 ID 获取对应的设备实例
@@ -93,7 +107,6 @@ class MQTTClient:
             'DevID': instance.ID,  # 直接使用 instance.ID
             'Tags': tags
         }
-
 
     def publish_all_devices_info(self, device_type_id):
         """
@@ -134,11 +147,12 @@ class MQTTClient:
     def stop_publish_loop(self):
         """停止定时发布循环"""
         self.publish_thread_stop = True
+
     def subscribe_device_type(self, device_type_id):
-                """
-                根据设备类型 ID 订阅相应的 MQTT 主题。
-                :param device_type_id: 设备类型 ID
-                """
-                topic = f"AJB1/unified/{device_type_id}/+"  # 订阅指定设备类型的所有设备主题
-                self.client.subscribe(topic)
-                print(f"已订阅主题: {topic}")
+        """
+        根据设备类型 ID 订阅相应的 MQTT 主题。
+        :param device_type_id: 设备类型 ID
+        """
+        topic = f"AJB1/unified/{device_type_id}/+"  # 订阅指定设备类型的所有设备主题
+        self.client.subscribe(topic)
+        print(f"已订阅主题: {topic}")

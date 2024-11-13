@@ -174,7 +174,6 @@ def main():
     #等待连接成功
     while not mqtt_client.client.is_connected():
         print("等待连接成功...")
-        mqtt_client.start_publish_loop(device_type_id=1,device_id, interval=5)  # 每 5 秒发布设备类型为 1 的设备信息
         # 在主程序中显式订阅设备类型 1 的主题
         #订阅实例化的设备
         for items in instances:
@@ -205,7 +204,7 @@ if __name__ == "__main__":
     # 无限循环打印状态信息
     while True:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 【优创未来】, version V0.2.6! 当前时间是 {current_time}")
+        print(f"Hello, 【优创未来】, version V0.2.7! 当前时间是 {current_time}")
         
         for instance in instances:
             print(f"阀门开度：{instance.Tags[1000]['实时值']}")

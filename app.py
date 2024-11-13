@@ -77,7 +77,7 @@ def rtu_communication():
         except Exception as e:
             print(f"读取错误：{e}")
 
-        time.sleep(0.1)
+        time.sleep(0.2)
 
         for instance in instances:
             # 只有在 instance.Tags[2000]["实时值"] 值发生变化时才进行写入操作
@@ -95,7 +95,7 @@ def rtu_communication():
                 except Exception as e:
                     print(f"写入错误：{e}")
 
-        time.sleep(0.1)
+        time.sleep(0.2)
 
 def gpio_input_monitor():
     """
@@ -168,6 +168,7 @@ def main():
         if device_info["DevTypeID"] == device_type_id:
             instance = create_device_instance(device_info, generated_class)
             instances.append(instance)
+
            
 
     #等待连接成功
@@ -175,7 +176,11 @@ def main():
         print("等待连接成功...")
         mqtt_client.start_publish_loop(device_type_id=1, interval=5)  # 每 5 秒发布设备类型为 1 的设备信息
         # 在主程序中显式订阅设备类型 1 的主题
-        mqtt_client.subscribe_device_type(device_type_id=1)
+        #订阅实例化的设备
+        for items in instances:
+            
+            mqtt_client.subscribe_device_type(device_type_id=1,device_ID=items.ID)
+
         time.sleep(5)  # 每5秒检查一次连接状态
    
  # 启动线程
@@ -200,7 +205,7 @@ if __name__ == "__main__":
     # 无限循环打印状态信息
     while True:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 【优创未来】, version V0.2.3! 当前时间是 {current_time}")
+        print(f"Hello, 【优创未来】, version V0.2.5! 当前时间是 {current_time}")
         
         for instance in instances:
             print(f"阀门开度：{instance.Tags[1000]['实时值']}")

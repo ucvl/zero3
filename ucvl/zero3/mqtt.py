@@ -42,12 +42,11 @@ class MQTTClient:
 
             # 遍历所有设备
             for dev in payload["Devs"]:
-                dev_id = dev.get("ID")
+                dev_id = dev.get("DevID")
                 if dev_id is None:
                     print("设备 ID 不存在，跳过该设备")
                     continue
 
-                print(f"正在处理设备 ID: {dev_id}")
                 instance = self.get_device_instance_by_id(dev_id)
                 if instance:
                     print(f"找到设备实例: {instance}")
@@ -148,11 +147,11 @@ class MQTTClient:
         """停止定时发布循环"""
         self.publish_thread_stop = True
 
-    def subscribe_device_type(self, device_type_id):
+    def subscribe_device_type(self, device_type_id,device_ID):
         """
         根据设备类型 ID 订阅相应的 MQTT 主题。
         :param device_type_id: 设备类型 ID
         """
-        topic = f"AJB1/unified/{device_type_id}/+"  # 订阅指定设备类型的所有设备主题
+        topic = f"AJB1/unified/{device_type_id}/{device_ID}"  # 订阅指定设备类型的所有设备主题
         self.client.subscribe(topic)
         print(f"已订阅主题: {topic}")

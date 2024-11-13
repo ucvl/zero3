@@ -35,7 +35,9 @@ class MQTTClient:
         try:
             print(f"接收到消息: {msg.topic} -> {msg.payload.decode()}")
             payload = json.loads(msg.payload.decode())
-
+            # 打印整个 payload 数据
+            print("当前 payload 数据: ")
+            print(json.dumps(payload, indent=4, ensure_ascii=False))  # 格式化输出
             if "Devs" not in payload:
                 print("消息中缺少 'Devs' 字段，无法更新设备信息。")
                 return

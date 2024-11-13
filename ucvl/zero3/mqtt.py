@@ -36,8 +36,8 @@ class MQTTClient:
             print(f"接收到消息: {msg.topic} -> {msg.payload.decode()}")
             payload = json.loads(msg.payload.decode())
             # 打印整个 payload 数据
-            print("当前 payload 数据: ")
-            print(json.dumps(payload, indent=4, ensure_ascii=False))  # 格式化输出
+            #print("当前 payload 数据: ")
+            #print(json.dumps(payload, indent=4, ensure_ascii=False))  # 格式化输出
             if "Devs" not in payload:
                 print("消息中缺少 'Devs' 字段，无法更新设备信息。")
                 return
@@ -109,7 +109,7 @@ class MQTTClient:
             'Tags': tags
         }
 
-    def publish_all_devices_info(self, device_type_id):
+    def publish_all_devices_info(self, device_type_id,device_id):
         """
         发布指定类型设备的状态信息
         """
@@ -120,7 +120,7 @@ class MQTTClient:
                 devices_info.append(self.format_device_info(instance))
 
         if devices_info:  # 确保有设备信息才发布
-            topic = f"AJB1/zero3/{device_type_id}"
+            topic = f"AJB1/zero3/{device_type_id}/{device_id}"
             payload = {
                 'DeviceTypeID': device_type_id,
                 'TS': int(time.time()),
@@ -130,18 +130,18 @@ class MQTTClient:
             self.client.publish(topic, json.dumps(payload))
             print(f"发布到 {topic}: {json.dumps(payload)}")
 
-    def start_publish_loop(self, device_type_id, interval=5):
+    def start_publish_loop(self, device_type_id,device_id, interval=5):
         """
         启动定时发布设备信息的循环。
         :param interval: 定时发布的间隔时间，默认为 5 秒
         """
-        def loop():
+        def loop(device_type_id,device_id):
             while not self.publish_thread_stop:
-                self.publish_all_devices_info(device_type_id)
+                self.publish_all_devices_info(device_type_id,device_id)
                 time.sleep(interval)
 
         # 启动定时发布的线程
-        publish_thread = threading.Thread(target=loop)
+        publish_thread = threading.Thread(target=loop,args=(device_type_id, device_id))
         publish_thread.daemon = True
         publish_thread.start()
 
@@ -149,11 +149,11 @@ class MQTTClient:
         """停止定时发布循环"""
         self.publish_thread_stop = True
 
-    def subscribe_device_type(self, device_type_id,device_ID):
+    def subscribe_device_type(self, device_type_id,device_id):
         """
         根据设备类型 ID 订阅相应的 MQTT 主题。
         :param device_type_id: 设备类型 ID
         """
-        topic = f"AJB1/unified/{device_type_id}/{device_ID}"  # 订阅指定设备类型的所有设备主题
+        topic = f"AJB1/unified/{device_type_id}/{device_id}"  # 订阅指定设备类型的所有设备主题
         self.client.subscribe(topic)
         print(f"已订阅主题: {topic}")

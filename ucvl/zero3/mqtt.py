@@ -51,7 +51,7 @@ class MQTTClient:
 
                 instance = self.get_device_instance_by_id(dev_id)
                 if instance:
-                    print(f"找到设备实例: {instance}")
+                    #print(f"找到设备实例: {instance}")
 
                     # 更新设备的标签（Tags）
                     if "Tags" in dev:
@@ -128,7 +128,7 @@ class MQTTClient:
             }
 
             self.client.publish(topic, json.dumps(payload))
-            print(f"发布到 {topic}: {json.dumps(payload)}")
+           # print(f"发布到 {topic}: {json.dumps(payload)}")
 
     def start_publish_loop(self, device_type_id,device_id, interval=5):
         """
@@ -156,4 +156,4 @@ class MQTTClient:
         """
         topic = f"AJB1/unified/{device_type_id}/{device_id}"  # 订阅指定设备类型的所有设备主题
         self.client.subscribe(topic)
-        print(f"已订阅主题: {topic}")
+        #print(f"已订阅主题: {topic}")

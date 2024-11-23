@@ -204,7 +204,7 @@ if __name__ == "__main__":
     # 无限循环打印状态信息
     while True:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Hello, 【优创未来】, version V0.2.8! 当前时间是 {current_time}")
+        print(f"Hello, 【优创未来】, version V0.2.11! 当前时间是 {current_time}")
         
         for instance in instances:
             print(f"阀门开度：{instance.Tags[1000]['实时值']}")

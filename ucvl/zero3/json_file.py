@@ -62,7 +62,7 @@ class JSONHandler:
                 for tag in device_info.get("Tags", []):
                     if tag["ID"] == tag_name:
                         found_tag = True
-                        print(f"找到标签: {tag}")  # 打印找到的标签
+                        #print(f"找到标签: {tag}")  # 打印找到的标签
                         tag["实时值"] = real_value
                         self.save_json()
                         return

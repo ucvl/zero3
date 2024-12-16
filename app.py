@@ -77,7 +77,7 @@ def rtu_communication():
         except Exception as e:
             print(f"读取错误：{e}")
 
-        time.sleep(0.2)
+        time.sleep(0.5)
 
         for instance in instances:
             # 只有在 instance.Tags[2000]["实时值"] 值发生变化时才进行写入操作
@@ -95,7 +95,7 @@ def rtu_communication():
                 except Exception as e:
                     print(f"写入错误：{e}")
 
-        time.sleep(0.2)
+        time.sleep(0.5)
 
 def gpio_input_monitor():
     """

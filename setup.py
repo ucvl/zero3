@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ucvl.zero3",
-    version="V0.2.12",
+    version="V0.2.13",
     author="赵锐剑",
     author_email="123003020@qq.com",
     description="流量平衡阀智能计算核心",
